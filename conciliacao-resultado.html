@@ -1,0 +1,1801 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conciliador Web - Conciliacao Tripla</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:#F0F4F8;color:#1A2B3C}
+nav{background:#002B5C;padding:0 20px;height:52px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100}
+nav .logo{font-size:20px;font-weight:700}
+nav .logo .red{color:#E41E2B}
+nav .logo .white{color:#fff}
+nav .menu-btn{background:none;border:none;color:#fff;padding:8px 14px;font-size:13px;cursor:pointer;border-radius:4px}
+nav .menu-btn:hover{background:rgba(255,255,255,0.15)}
+nav .user-area{margin-left:auto;display:flex;align-items:center;gap:12px}
+nav .user-name{color:#fff;font-size:13px;font-weight:600}
+.container{max-width:1500px;margin:0 auto;padding:16px}
+.section-header{background:#002B5C;color:#fff;padding:10px 20px;font-size:14px;font-weight:600;border-radius:4px 4px 0 0}
+.sources{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}
+.source-card{background:#fff;border-radius:6px;padding:16px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.source-card.truth{border:2px solid #002B5C}
+.source-card .badge{background:#002B5C;color:#fff;padding:3px 10px;border-radius:3px;font-size:9px;font-weight:700;display:inline-block;margin-bottom:6px}
+.source-card .label{font-size:11px;color:#5a6b7c}
+.source-card .count{font-size:34px;font-weight:700}
+.source-card .sub{font-size:11px;color:#5a6b7c}
+.taxa-bar{background:#fff;border:2px solid #002B5C;border-radius:6px;padding:14px;text-align:center;margin-bottom:14px}
+.taxa-bar .value{font-size:44px;font-weight:700;color:#002B5C}
+.status-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.status-card{background:#fff;border-radius:6px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,0.06);display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:all 0.2s;user-select:none}
+.status-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.12)}
+.status-card.active{box-shadow:0 0 0 3px rgba(0,43,92,0.3)}
+.status-card .info .title{font-size:11px;color:#5a6b7c;font-weight:600}
+.status-card .info .subtitle{font-size:9px;color:#aaa}
+.status-card .numbers{text-align:right}
+.status-card .numbers .count{font-size:26px;font-weight:700;line-height:1.1}
+.status-card .numbers .val{font-size:12px}
+#detail{margin-top:14px}
+.detail-header{background:#002B5C;color:#fff;padding:10px 20px;font-size:13px;font-weight:600;display:flex;justify-content:space-between;align-items:center;border-radius:4px 4px 0 0}
+.detail-header .close{background:rgba(255,255,255,0.2);border:none;color:#fff;padding:4px 12px;border-radius:3px;cursor:pointer;font-size:12px}
+.detail-header .close:hover{background:rgba(255,255,255,0.3)}
+.detail-info{background:#E8F0FE;padding:8px 20px;font-size:12px;color:#002B5C;border-bottom:1px solid #d1d9e0}
+table{width:100%;border-collapse:collapse;font-size:11px;table-layout:auto}
+thead th{background:#002B5C;color:#fff;padding:8px 10px;text-align:left;border:1px solid #003D7A;white-space:nowrap;position:sticky;top:0;z-index:10;font-size:11px;font-weight:600}
+tbody td{padding:6px 10px;border:1px solid #e0e5ea;vertical-align:middle;white-space:nowrap}
+tbody tr:nth-child(even){background:#F5F8FB}
+tbody tr:hover{background:#E3EDF7}
+.detail-table-wrap{overflow-x:auto;max-height:70vh;overflow-y:auto;border:1px solid #d1d9e0;border-radius:0 0 4px 4px}
+.badge-nat{padding:2px 8px;border-radius:3px;font-size:9px;font-weight:600;color:#fff}
+.badge-cred{background:#0066B3}
+.badge-deb{background:#e67e22}
+.mono{font-family:monospace;font-size:10px}
+.right{text-align:right}
+.red{color:#E41E2B}
+.green{color:#27ae60}
+.pagination{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;background:#fff;border-top:1px solid #e0e5ea}
+.pagination button{background:#0066B3;color:#fff;border:none;padding:6px 16px;border-radius:4px;cursor:pointer;font-size:12px}
+.pagination button:disabled{opacity:0.4;cursor:not-allowed}
+.pagination span{font-size:12px;color:#5a6b7c}
+footer{background:#002B5C;color:#fff;padding:10px 20px;font-size:11px;display:flex;justify-content:space-between;margin-top:16px}
+.hidden{display:none}
+.nav-dropdown{position:relative}
+.dropdown-menu{position:absolute;top:100%;left:0;background:#002B5C;border:1px solid #003D7A;border-radius:0 0 6px 6px;min-width:260px;box-shadow:0 8px 24px rgba(0,0,0,0.3);z-index:200;max-height:400px;overflow-y:auto}
+.dropdown-item{display:block;padding:10px 18px;color:#fff;text-decoration:none;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer}
+.dropdown-item:hover{background:#003D7A}
+.dropdown-item.active{background:#003D7A;font-weight:600}
+#pageVendas{display:none}
+</style>
+</head>
+<body>
+<nav>
+  <span class="logo"><span class="red">Conciliador</span><span class="white">Web</span></span>
+  <div class="nav-dropdown">
+    <button class="menu-btn" onclick="toggleMenu('menuConsultas')">Consultas ▾</button>
+    <div id="menuConsultas" class="dropdown-menu hidden">
+      <a class="dropdown-item" href="#" onclick="navigateTo('adqerp')">Conciliacao de Vendas ADQ x ERP</a>
+      <a class="dropdown-item" href="#" onclick="navigateTo('taxas')">Conciliacao de Taxa</a>
+      <a class="dropdown-item" href="#" onclick="navigateTo('banco')">Conciliacao de Banco</a>
+      <a class="dropdown-item active" href="#" onclick="navigateTo('tripla')">Conciliacao Tripla</a>
+      <a class="dropdown-item" href="#" onclick="navigateTo('vendas')">Conciliacao de Vendas</a>
+      <a class="dropdown-item" href="#">Conciliacao Bancaria</a>
+      <a class="dropdown-item" href="#">Visao de Vendas</a>
+      <a class="dropdown-item" href="#">Visao de Recebimentos</a>
+      <a class="dropdown-item" href="#">Extrato Financeiro</a>
+      <a class="dropdown-item" href="#">Chargebacks e Requests</a>
+    </div>
+  </div>
+  <button class="menu-btn">Integracao ▾</button>
+  <button class="menu-btn">Cadastros ▾</button>
+  <button class="menu-btn">Pix ▾</button>
+  <button class="menu-btn">Saldos ▾</button>
+  <div class="user-area"><span class="user-name">FINANCEIRO.MATEUS</span></div>
+</nav>
+<div class="container" id="pageTripla" style="display:none">
+  <div class="section-header">Conciliacao Tripla — Adquirente (Verdade) vs ERP Financeiro vs Sitef</div>
+  <div class="sources">
+    <div class="source-card truth"><div class="badge">⭐ FONTE DE VERDADE</div><div class="label">Adquirente (CIELO03)</div><div class="count" style="color:#002B5C" id="srcCielo">...</div><div class="sub" id="srcCieloVal">...</div></div>
+    <div class="source-card"><div style="height:22px"></div><div class="label">ERP Financeiro (FN01)</div><div class="count" style="color:#e67e22" id="srcFn01">...</div><div class="sub">transacoes</div></div>
+    <div class="source-card"><div style="height:22px"></div><div class="label">Sitef (ST02)</div><div class="count" style="color:#0066B3" id="srcSt02">...</div><div class="sub">transacoes</div></div>
+  </div>
+  <div class="taxa-bar"><div style="color:#5a6b7c;font-size:13px">Taxa de Conciliacao (3 vias)</div><div class="value" id="taxa">...</div><div style="font-size:12px;color:#5a6b7c" id="taxaDetail"></div></div>
+  <div class="status-grid" id="statusGrid"></div>
+  <div id="detail" class="hidden"></div>
+</div>
+
+<!-- PAGINA ADQ x ERP (estilo Statix) -->
+<div class="container" id="pageAdqErp">
+  <div class="section-header" style="background:#E41E2B">Conciliacao de Vendas - ADQ x ERP</div>
+  <p style="font-size:12px;color:#666;padding:6px 0">Os campos com * sao obrigatorios.</p>
+
+  <!-- FILTROS -->
+  <div style="background:#fff;border:1px solid #ddd;border-radius:4px;padding:16px;margin-bottom:12px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;margin-bottom:12px">
+      <div>
+        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Periodo de Vendas *</label>
+        <div style="display:flex;gap:6px">
+          <input type="date" id="filtroDataIni" style="flex:1;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px">
+          <input type="date" id="filtroDataFim" style="flex:1;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px">
+        </div>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Adquirente</label>
+        <select id="filtroAdquirente" onchange="updateTagAdquirente()" style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px">
+          <option value="">Todos</option>
+          <option value="Cielo">Cielo</option>
+          <option value="Rede">Rede</option>
+          <option value="Stone">Stone</option>
+          <option value="Getnet">Getnet</option>
+          <option value="PagSeguro">PagSeguro</option>
+          <option value="Safrapay">Safrapay</option>
+        </select>
+        <div id="tagAdquirente" style="margin-top:4px"></div>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Loja</label>
+        <select id="filtroLoja" style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px">
+          <option value="">Todas</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Bandeira</label>
+        <select id="filtroBandeira" style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px">
+          <option value="">Todas</option>
+          <option value="Visa">Visa</option>
+          <option value="MasterCard">MasterCard</option>
+          <option value="Elo">Elo</option>
+          <option value="Amex">Amex</option>
+          <option value="Voucher">Voucher</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;margin-bottom:14px">
+      <div>
+        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Produto</label>
+        <select id="filtroProduto" style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px">
+          <option value="">Todos</option>
+          <option value="Credito">Credito</option>
+          <option value="Debito">Debito</option>
+          <option value="Voucher">Voucher</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Resultado</label>
+        <select id="filtroResultado" style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px">
+          <option value="Data">Data</option>
+          <option value="Bandeira">Bandeira</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Conciliada</label>
+        <div style="display:flex;gap:12px;padding-top:4px;font-size:12px">
+          <label><input type="radio" name="filtroConciliada" value="" checked> Todos</label>
+          <label><input type="radio" name="filtroConciliada" value="sim"> Sim</label>
+          <label><input type="radio" name="filtroConciliada" value="nao"> Nao</label>
+          <label><input type="radio" name="filtroConciliada" value="inex"> Inexistente</label>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Forma Captura</label>
+        <div style="display:flex;gap:12px;padding-top:4px;font-size:12px">
+          <label><input type="radio" name="filtroCaptura" value="" checked> Todos</label>
+          <label><input type="radio" name="filtroCaptura" value="TEF"> TEF</label>
+          <label><input type="radio" name="filtroCaptura" value="POS"> POS</label>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="renderAdqErp()" style="background:#0066B3;color:#fff;border:1px solid #004E8C;padding:6px 18px;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer">Pesquisar</button>
+      <button onclick="alert('Conciliacao solicitada')" style="background:#27ae60;color:#fff;border:none;padding:6px 18px;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer">Solicitar Conciliacao</button>
+    </div>
+  </div>
+
+  <div id="adqErpContent"><div style="padding:40px;text-align:center;color:#5a6b7c">Clique em Pesquisar para carregar os dados.</div></div>
+</div>
+<!-- Modal detalhe -->
+<div id="modalOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:500" onclick="closeModal()"></div>
+<div id="modalDetalhe" style="display:none;position:fixed;top:20px;left:20px;right:20px;bottom:20px;background:#fff;z-index:501;border-radius:6px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,0.3)">
+  <div style="background:#E41E2B;color:#fff;padding:10px 20px;font-size:14px;font-weight:600;display:flex;justify-content:space-between;align-items:center">
+    <span>Detalhe Venda</span>
+    <button onclick="closeModal()" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer">✕</button>
+  </div>
+  <div id="modalInfo" style="padding:8px 20px;background:#f8f8f8;font-size:12px;display:flex;gap:40px;border-bottom:1px solid #ddd"></div>
+  <div id="modalBody" style="overflow:auto;height:calc(100% - 110px);padding:0"></div>
+  <div id="modalPagination" style="padding:8px 20px;border-top:1px solid #ddd;display:flex;justify-content:space-between;align-items:center;font-size:12px"></div>
+</div>
+
+<!-- PAGINA CONCILIACAO DE BANCO -->
+<div class="container" id="pageBanco" style="display:none">
+  <div class="section-header" style="background:#E41E2B">Conciliar Ordens de Pagamento - Empresas</div>
+  <p style="font-size:12px;color:#666;padding:6px 0">Os campos com * sao obrigatorios.</p>
+  <div style="background:#fff;border:1px solid #ddd;border-radius:4px;padding:16px;margin-bottom:12px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;margin-bottom:12px">
+      <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Periodo *</label><div style="display:flex;gap:6px"><input type="date" id="filtroBancoDataIni" style="flex:1;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px"><input type="date" id="filtroBancoDataFim" style="flex:1;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px"></div></div>
+      <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Adquirente</label><select id="filtroBancoAdq" style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px"><option value="Rede">Rede</option></select><div id="tagBancoAdq" style="margin-top:4px"></div></div>
+      <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Bandeira</label><select id="filtroBancoBandeira" style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px"><option value="">Todas</option><option value="AMEX">AMEX</option><option value="ELO">ELO</option><option value="MasterCard">MasterCard</option><option value="VISA">VISA</option><option value="Hipercard">Hipercard</option></select></div>
+      <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Natureza</label><select id="filtroBancoNatureza" style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px"><option value="">Selecione</option><option value="CREDITO">CREDITO</option><option value="DEBITO">DEBITO</option></select></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;margin-bottom:12px">
+      <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Conta</label><select style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px"><option value="">Selecione</option></select></div>
+      <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Situacao baixa</label><select style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px"><option value="">Selecione</option></select></div>
+      <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Empresa Gmat</label><select style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px"><option>MATEUS FOOD</option></select><div style="margin-top:4px"><span style="background:#0099cc;color:#fff;padding:2px 8px;border-radius:3px;font-size:10px">MATEUS FOOD ✕</span></div></div>
+      <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Origem</label><select style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px"><option>Selecione</option></select></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="renderBanco()" style="background:#0066B3;color:#fff;border:1px solid #004E8C;padding:6px 18px;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer">Pesquisar</button>
+      <button style="background:#27ae60;color:#fff;border:none;padding:6px 18px;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer">monitorarOps</button>
+    </div>
+  </div>
+  <div id="bancoContent"><div style="padding:40px;text-align:center;color:#5a6b7c">Clique em Pesquisar para carregar os dados.</div></div>
+</div>
+
+<!-- PAGINA CONCILIACAO DE TAXA -->
+<div class="container" id="pageTaxas" style="display:none">
+  <div class="section-header" style="background:#E41E2B">Conciliacao de Taxa</div>
+  <p style="font-size:12px;color:#666;padding:6px 0">Os campos com * sao obrigatorios.</p>
+  <div style="background:#fff;border:1px solid #ddd;border-radius:4px;padding:16px;margin-bottom:12px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;margin-bottom:12px">
+      <div>
+        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Periodo de Vendas *</label>
+        <div style="display:flex;gap:6px">
+          <input type="date" id="filtroTaxaDataIni" value="2026-04-02" style="flex:1;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px">
+          <input type="date" id="filtroTaxaDataFim" value="2026-04-02" style="flex:1;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px">
+        </div>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Adquirente</label>
+        <select id="filtroTaxaAdq" style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px">
+          <option value="">Todos</option><option value="Rede">Rede</option><option value="Cielo">Cielo</option><option value="Stone">Stone</option>
+        </select>
+        <div id="tagTaxaAdq" style="margin-top:4px"></div>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Loja</label>
+        <select style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px"><option value="">Todas</option></select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Cnae</label>
+        <select style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px"><option value="">Selecione</option></select>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:14px;margin-bottom:12px">
+      <div>
+        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Bandeira</label>
+        <select id="filtroTaxaBandeira" style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px">
+          <option value="">Todas</option><option value="Visa">Visa</option><option value="MasterCard">MasterCard</option><option value="Elo">Elo</option><option value="Amex">Amex</option><option value="HiperCard">HiperCard</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Produto</label>
+        <select style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px"><option value="">Todos</option></select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Visao</label>
+        <select style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px"><option>Padrao</option></select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Plano</label>
+        <select id="filtroTaxaPlano" style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px">
+          <option value="">Selecione</option><option value="1">1 (Rotativo/Debito)</option><option value="2">2 (2-6 parcelas)</option><option value="3">3 (7-12 parcelas)</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Meio Captura</label>
+        <select style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px"><option>Selecione</option></select>
+      </div>
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Conciliada</label>
+      <div style="display:flex;gap:12px;font-size:12px">
+        <label><input type="radio" name="filtroTaxaConc" value="" checked> Todos</label>
+        <label><input type="radio" name="filtroTaxaConc" value="sim"> Sim</label>
+        <label><input type="radio" name="filtroTaxaConc" value="nao"> Nao</label>
+        <label><input type="radio" name="filtroTaxaConc" value="menor"> Taxa Menor</label>
+        <label><input type="radio" name="filtroTaxaConc" value="maior"> Taxa Maior</label>
+        <label><input type="radio" name="filtroTaxaConc" value="sem"> Nao Cadastrada</label>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="renderTaxas()" style="background:#0066B3;color:#fff;border:1px solid #004E8C;padding:6px 18px;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer">Pesquisar</button>
+      <button style="background:#27ae60;color:#fff;border:none;padding:6px 18px;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer">Solicitar Exportacao ▾</button>
+    </div>
+  </div>
+  <div id="taxasContent"><div style="padding:40px;text-align:center;color:#5a6b7c">Clique em Pesquisar para carregar os dados.</div></div>
+</div>
+
+<!-- PAGINA CONCILIACAO DE VENDAS -->
+<div class="container" id="pageVendas" style="display:none">
+  <div class="section-header">Conciliacao de Vendas — Adquirente (CIELO03)</div>
+  <div id="vendasContent"><div style="padding:40px;text-align:center;color:#5a6b7c">Carregando transacoes do Adquirente...</div></div>
+</div>
+
+<footer><span>Powered by <strong>Conciliador Web</strong></span><span id="acesso"></span></footer>
+
+<script>
+const fmt = v => 'R$ ' + v.toLocaleString('pt-BR',{minimumFractionDigits:2});
+const fmtn = v => v.toLocaleString('pt-BR');
+let DATA = null;
+let vendasPage = 0;
+
+// === MENU DROPDOWN ===
+// === ACOES CONCILIACAO DE BANCO ===
+function conciliarLinha(idx) { alert('Linha ' + (idx+1) + ' conciliada!'); }
+
+function verLinha(idx) {
+  // Buscar dados da conciliacao atual
+  var raw = BANCO;
+  var d = null;
+  if (raw.conciliacoes) {
+    var dataFiltro = document.getElementById('filtroBancoDataIni')?.value || '';
+    if (dataFiltro) {
+      var p = dataFiltro.split('-');
+      var fmt = p[2]+'/'+p[1]+'/'+p[0];
+      d = raw.conciliacoes.find(function(c){return c.data===fmt});
+    }
+    if (!d) d = raw.conciliacoes[raw.conciliacoes.length-1];
+  } else { d = raw; }
+
+  var det = d.detalhe[idx];
+  if (!det) { alert('Dados nao encontrados'); return; }
+
+  // Buscar ENVIO JSON correspondente para obter os titulos FN01
+  var bandLabel = det.bandeira;
+  var natLabel = det.natureza === 'CREDITO' ? 'CD' : 'DB';
+  var dataFile = d.data.split('/').reverse().join('');
+  var fileName = 'ENVIO_REDE_' + bandLabel + '_' + natLabel + '_' + dataFile + '.json';
+
+  fetch(fileName)
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(envio) {
+      renderVerLinhaModal(det, d, envio);
+    })
+    .catch(function() {
+      renderVerLinhaModal(det, d, null);
+    });
+}
+
+function renderVerLinhaModal(det, conc, envio) {
+  var vendas = envio ? envio.vendas || [] : [];
+
+  // Abrir modal
+  document.getElementById('modalOverlay').style.display = 'block';
+  document.getElementById('modalDetalhe').style.display = 'block';
+
+  // Info no topo
+  var info = document.getElementById('modalInfo');
+  info.innerHTML = '<div><b>Bandeira:</b> ' + det.bandeira + '</div>'
+    + '<div><b>Natureza:</b> ' + det.natureza + '</div>'
+    + '<div><b>Data:</b> ' + conc.data + '</div>'
+    + '<div><b>Banco:</b> ' + fmt(det.valor) + '</div>'
+    + '<div><b>Adq Liquido:</b> ' + fmt(det.adqLiquido || det.valor) + '</div>'
+    + '<div><b>Dif Banco:</b> <span style="color:' + (det.difBanco != 0 ? '#E41E2B' : '#27ae60') + '">' + fmt(det.difBanco || 0) + '</span></div>'
+    + '<div><b>FN01 Titulos:</b> ' + vendas.length + '</div>'
+    + '<div><b>Status:</b> <span style="color:' + (det.conciliada ? '#27ae60' : '#E41E2B') + '">' + (det.conciliada ? 'Conciliado' : 'Pendente') + '</span></div>';
+
+  // Tabela de titulos
+  var h = '';
+  if (vendas.length > 0) {
+    // Conciliados
+    h += '<div style="padding:10px 20px"><h3 style="color:#27ae60;font-size:13px;margin:0 0 8px">Titulos FN01 Conciliados (' + vendas.length + ')</h3>';
+    h += '<table style="width:100%;border-collapse:collapse;font-size:11px">';
+    h += '<thead><tr style="background:#f0f0f0">';
+    ['Titulo','Loja','Data Emissao','Data Venc','Valor Bruto','Taxa','Valor Devedor','Parcela','NSU Host','PDV'].forEach(function(c){
+      h += '<th style="padding:6px;border:1px solid #ddd;text-align:left;font-size:10px">'+c+'</th>';
+    });
+    h += '</tr></thead><tbody>';
+
+    // Paginacao
+    var PAGE_SIZE = 50;
+    var page = window._verLinhaPage || 0;
+    var start = page * PAGE_SIZE;
+    var end = Math.min(start + PAGE_SIZE, vendas.length);
+    var pages = Math.ceil(vendas.length / PAGE_SIZE);
+
+    var totalBruto = 0, totalDev = 0;
+    for (var j = 0; j < vendas.length; j++) { totalBruto += vendas[j].valorTransacao || 0; totalDev += vendas[j].valorDevedor || 0; }
+
+    for (var i = start; i < end; i++) {
+      var v = vendas[i];
+      var bg = i % 2 === 0 ? '#fff' : '#f8f8f8';
+      h += '<tr style="background:'+bg+'">';
+      h += '<td style="padding:4px 6px;border:1px solid #ddd;font-weight:600">'+v.numeroTitulo+'</td>';
+      h += '<td style="padding:4px 6px;border:1px solid #ddd">'+v.loja+'</td>';
+      h += '<td style="padding:4px 6px;border:1px solid #ddd">'+v.data+'</td>';
+      h += '<td style="padding:4px 6px;border:1px solid #ddd">'+v.dataVencimento+'</td>';
+      h += '<td style="padding:4px 6px;border:1px solid #ddd;text-align:right">'+fmt(v.valorTransacao)+'</td>';
+      h += '<td style="padding:4px 6px;border:1px solid #ddd;text-align:right;color:#E41E2B">'+fmt(v.valorTransacao - v.valorDevedor)+'</td>';
+      h += '<td style="padding:4px 6px;border:1px solid #ddd;text-align:right;font-weight:600">'+fmt(v.valorDevedor)+'</td>';
+      h += '<td style="padding:4px 6px;border:1px solid #ddd;text-align:center">'+v.parcela+'/'+v.qtdParcela+'</td>';
+      h += '<td style="padding:4px 6px;border:1px solid #ddd">'+v.nsuHost+'</td>';
+      h += '<td style="padding:4px 6px;border:1px solid #ddd">'+v.pdv+'</td>';
+      h += '</tr>';
+    }
+    // Total
+    h += '<tr style="background:#0099cc;color:#fff;font-weight:600">';
+    h += '<td colspan="4" style="padding:6px;border:1px solid #0088bb">Total</td>';
+    h += '<td style="padding:6px;border:1px solid #0088bb;text-align:right">'+fmt(totalBruto)+'</td>';
+    h += '<td style="padding:6px;border:1px solid #0088bb;text-align:right">'+fmt(totalBruto - totalDev)+'</td>';
+    h += '<td style="padding:6px;border:1px solid #0088bb;text-align:right">'+fmt(totalDev)+'</td>';
+    h += '<td colspan="3" style="padding:6px;border:1px solid #0088bb"></td>';
+    h += '</tr>';
+    h += '</tbody></table></div>';
+
+    // Paginacao
+    if (pages > 1) {
+      h += '<div style="padding:4px 20px;font-size:11px;display:flex;justify-content:space-between;align-items:center">';
+      h += '<span>Pagina ' + (page+1) + ' de ' + pages + ' (' + vendas.length + ' titulos)</span>';
+      h += '<div>';
+      h += '<button onclick="window._verLinhaPage=Math.max(0,'+(page-1)+');renderVerLinhaModal(window._verLinhaDetCache,window._verLinhaConcCache,window._verLinhaEnvioCache)" style="background:#0099cc;color:#fff;border:none;padding:3px 10px;border-radius:3px;cursor:pointer;margin:0 2px" '+(page===0?'disabled':'')+'>‹ Anterior</button>';
+      h += '<button onclick="window._verLinhaPage=Math.min('+(pages-1)+','+(page+1)+');renderVerLinhaModal(window._verLinhaDetCache,window._verLinhaConcCache,window._verLinhaEnvioCache)" style="background:#0099cc;color:#fff;border:none;padding:3px 10px;border-radius:3px;cursor:pointer;margin:0 2px" '+(page>=pages-1?'disabled':'')+'>Proximo ›</button>';
+      h += '</div></div>';
+    }
+  } else {
+    h += '<div style="padding:40px;text-align:center;color:#999">Nenhum titulo FN01 encontrado para esta bandeira/natureza.</div>';
+  }
+
+  document.getElementById('modalBody').innerHTML = h;
+
+  // Cache para paginacao
+  window._verLinhaDetCache = det;
+  window._verLinhaConcCache = conc;
+  window._verLinhaEnvioCache = envio;
+}
+
+
+function downloadEnvio(idx) {
+  var d = null;
+  var raw = BANCO;
+  if (raw.conciliacoes) {
+    var dataFiltro = document.querySelector('#pageBanco input[type=date]')?.value || '';
+    var p = dataFiltro.split('-');
+    var dataFiltroFmt = p[2]+'/'+p[1]+'/'+p[0];
+    d = raw.conciliacoes.find(function(c) { return c.data === dataFiltroFmt; });
+    if (!d) d = raw.conciliacoes[raw.conciliacoes.length-1];
+  } else { d = raw; }
+
+  var det = d.detalhe[idx];
+  if (!det.conciliada) { alert('Transacao pendente - ainda nao conciliada'); return; }
+
+  // Montar nome do arquivo
+  var bandLabel = det.bandeira;
+  if (bandLabel === 'MAST') bandLabel = 'MasterCard';
+  var natLabel = det.natureza === 'CREDITO' ? 'CD' : 'DB';
+  var dataFile = d.data.split('/').reverse().join('');
+  var fileName = 'ENVIO_REDE_' + bandLabel + '_' + natLabel + '_' + dataFile + '.json';
+
+  // Tentar baixar o arquivo gerado
+  fetch(fileName)
+    .then(function(r) {
+      if (r.ok) return r.blob();
+      throw new Error('Arquivo nao encontrado');
+    })
+    .then(function(blob) {
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = fileName; a.click();
+      URL.revokeObjectURL(url);
+    })
+    .catch(function() {
+      // Gerar em memoria se nao existir no servidor
+      var envio = {
+        id: 0, data: d.data.split('/').reverse().join('-'),
+        descricao: det.historico,
+        tipo: 'C', valor: det.valor, documento: 0, rede: 2, natureza: 2,
+        banco: 341, agencia: 4525, conta: 95686, digitoConta: 0,
+        arquivo: '', idArquivo: 0, vendas: [], liberacao: 0,
+        idCliente: 11, valorVendas: det.valor, tipoFinalizadoraBaixa: 0,
+      };
+      var blob = new Blob([JSON.stringify(envio, null, 2)], {type:'application/json'});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a'); a.href = url; a.download = fileName; a.click();
+      URL.revokeObjectURL(url);
+    });
+}
+
+function downloadTodosEnvios() {
+  var d = null;
+  var raw = BANCO;
+  if (raw.conciliacoes) {
+    var dataFiltro = document.querySelector('#pageBanco input[type=date]')?.value || '';
+    var p = dataFiltro.split('-');
+    var dataFiltroFmt = p[2]+'/'+p[1]+'/'+p[0];
+    d = raw.conciliacoes.find(function(c) { return c.data === dataFiltroFmt; });
+    if (!d) d = raw.conciliacoes[raw.conciliacoes.length-1];
+  } else { d = raw; }
+  var dataFile = d.data.split('/').reverse().join('');
+  var zipName = 'ENVIOS_REDE_' + dataFile + '.zip';
+  fetch(zipName)
+    .then(function(r) { if (r.ok) return r.blob(); throw new Error('ZIP nao encontrado'); })
+    .then(function(blob) {
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a'); a.href = url; a.download = zipName; a.click();
+      URL.revokeObjectURL(url);
+    })
+    .catch(function() { alert('ZIP nao disponivel para essa data'); });
+}
+
+function abrirReenvio(idx) {
+  var det = BANCO.detalhe[idx];
+  var modal = document.getElementById('modalOverlay');
+  var modalDet = document.getElementById('modalDetalhe');
+  modal.style.display = 'block';
+  modalDet.style.display = 'block';
+
+  var h = '<div style="background:#E41E2B;color:#fff;padding:10px 20px;font-size:14px;font-weight:600;display:flex;justify-content:space-between;align-items:center">';
+  h += '<span>Reenvio de Ordens de Pagamento</span>';
+  h += '<button onclick="closeModal()" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer">✕</button></div>';
+
+  h += '<div style="padding:16px">';
+  h += '<div style="display:flex;gap:8px;margin-bottom:12px">';
+  h += '<button style="background:#0099cc;color:#fff;border:none;padding:6px 16px;border-radius:4px;font-size:12px;cursor:pointer">Enviar Selecionadas</button>';
+  h += '<button style="background:#27ae60;color:#fff;border:none;padding:6px 16px;border-radius:4px;font-size:12px;cursor:pointer">Atualizar Pagina</button>';
+  h += '</div>';
+
+  h += '<table style="width:100%;border-collapse:collapse;font-size:12px">';
+  h += '<thead><tr>';
+  ['','Data Lancamento','Descricao','Documento','Rede','Natureza','Tipo','Retorno','Valor','Data Envio',''].forEach(function(c) {
+    h += '<th style="background:#0099cc;color:#fff;padding:6px 8px;border:1px solid #0088bb;font-size:11px">'+c+'</th>';
+  });
+  h += '</tr></thead><tbody>';
+
+  h += '<tr style="background:#fff">';
+  h += '<td style="padding:6px;border:1px solid #ddd;text-align:center"><input type="checkbox"></td>';
+  h += '<td style="padding:6px;border:1px solid #ddd">02/04/2026</td>';
+  h += '<td style="padding:6px;border:1px solid #ddd;font-size:11px">' + det.historico + '</td>';
+  h += '<td style="padding:6px;border:1px solid #ddd;text-align:center">0</td>';
+  h += '<td style="padding:6px;border:1px solid #ddd">Rede</td>';
+  h += '<td style="padding:6px;border:1px solid #ddd">' + det.natureza + '</td>';
+  h += '<td style="padding:6px;border:1px solid #ddd">Vinculado</td>';
+  h += '<td style="padding:6px;border:1px solid #ddd;text-align:center">200</td>';
+  h += '<td style="padding:6px;border:1px solid #ddd;text-align:right;font-weight:600">' + fmt(det.valor) + '</td>';
+  h += '<td style="padding:6px;border:1px solid #ddd;font-size:10px">' + new Date().toLocaleString('pt-BR') + '</td>';
+  h += '<td style="padding:6px;border:1px solid #ddd;text-align:center">';
+  h += '<button onclick="downloadEnvio('+idx+')" style="background:#27ae60;color:#fff;border:none;padding:3px 8px;border-radius:3px;cursor:pointer;font-size:11px" title="Download">➕</button> ';
+  h += '<button onclick="downloadEnvio('+idx+')" style="background:#E41E2B;color:#fff;border:none;padding:3px 8px;border-radius:3px;cursor:pointer;font-size:11px" title="Download JSON">⬇</button>';
+  h += '</td></tr>';
+
+  // Total
+  h += '<tr style="background:#0099cc;color:#fff;font-weight:600">';
+  h += '<td colspan="8" style="padding:6px;border:1px solid #0088bb;text-align:right">Total</td>';
+  h += '<td style="padding:6px;border:1px solid #0088bb;text-align:right">' + fmt(det.valor) + '</td>';
+  h += '<td colspan="2" style="padding:6px;border:1px solid #0088bb"></td>';
+  h += '</tr>';
+
+  h += '</tbody></table>';
+
+  h += '<div style="margin-top:12px"><button style="background:#0099cc;color:#fff;border:none;padding:6px 16px;border-radius:4px;font-size:12px;cursor:pointer">Enviar Selecionadas</button></div>';
+  h += '<div style="text-align:right;margin-top:12px"><button onclick="closeModal()" style="background:#E41E2B;color:#fff;border:none;padding:6px 16px;border-radius:4px;font-size:12px;cursor:pointer">Fechar</button></div>';
+  h += '</div>';
+
+  document.getElementById('modalBody').innerHTML = h;
+  document.getElementById('modalInfo').innerHTML = '';
+  document.getElementById('modalPagination').innerHTML = '';
+}
+
+// === PAGINA CONCILIACAO DE BANCO ===
+var BANCO = null;
+
+function renderBanco() {
+  try {
+    document.getElementById('bancoContent').innerHTML = '<div style="padding:20px;text-align:center;color:#5a6b7c">Carregando...</div>';
+    if (BANCO) { renderBancoPage(); return; }
+    fetch('conciliacao-banco.json')
+      .then(function(r) { return r.json(); })
+      .then(function(d) { BANCO = d; renderBancoPage(); })
+      .catch(function(e) { document.getElementById('bancoContent').innerHTML = '<p style="color:red;padding:20px">Erro: '+e.message+'</p>'; });
+  } catch(e) {
+    document.getElementById('bancoContent').innerHTML = '<p style="color:red;padding:20px">Erro: '+e.message+'</p>';
+  }
+}
+
+function renderBancoPage() {
+  var raw = BANCO;
+
+  // Ler filtros
+  var dateInputs = document.querySelectorAll('#pageBanco input[type=date]');
+  var dataFiltro = dateInputs[0] ? dateInputs[0].value : '';
+  var dataFiltroFmt = '';
+  if (dataFiltro) {
+    var p = dataFiltro.split('-');
+    dataFiltroFmt = p[2] + '/' + p[1] + '/' + p[0];
+  }
+  var filtroBandeira = (document.getElementById('filtroBancoBandeira') || {}).value || '';
+  var filtroNatureza = (document.getElementById('filtroBancoNatureza') || {}).value || '';
+
+  var d = null;
+  if (raw.conciliacoes) {
+    // Procurar pela data exata
+    d = raw.conciliacoes.find(function(c) { return c.data === dataFiltroFmt; });
+    // Se nao achar, nao carrega (sem fallback)
+    if (!d) {
+      document.getElementById('bancoContent').innerHTML = '<div style="padding:40px;text-align:center;color:#5a6b7c">Nenhuma conciliacao encontrada para ' + dataFiltroFmt + '.<br>Datas disponiveis: ' + raw.conciliacoes.map(function(c){return c.data}).join(', ') + '</div>';
+      return;
+    }
+  } else {
+    d = raw;
+  }
+
+  // Filtrar detalhe por bandeira e natureza
+  var detalheOriginal = d.detalhe || [];
+  var detalheFiltrado = detalheOriginal.filter(function(det) {
+    if (filtroBandeira && det.bandeira.toUpperCase() !== filtroBandeira.toUpperCase()) return false;
+    if (filtroNatureza && det.natureza !== filtroNatureza) return false;
+    return true;
+  });
+  // Usar copia de d com detalhe filtrado
+  d = Object.assign({}, d, { detalhe: detalheFiltrado });
+
+  // Recalcular resumo baseado no filtro
+  var r = d.resumo;
+  if (filtroBandeira || filtroNatureza) {
+    var totBanco = detalheFiltrado.reduce(function(s,x){return s+x.valor},0);
+    var totAdqLiq = detalheFiltrado.reduce(function(s,x){return s+(x.adqLiquido||x.valor)},0);
+    var totDifBanco = detalheFiltrado.reduce(function(s,x){return s+(x.difBanco||0)},0);
+    r = Object.assign({}, r, {
+      totalOrdens: Math.round(totBanco*100)/100,
+      totalAdqLiquido: Math.round(totAdqLiq*100)/100,
+      difBanco: Math.round(totDifBanco*100)/100,
+    });
+  }
+
+  // Setar adquirente
+  var adqSel = document.getElementById('filtroBancoAdq');
+  if (adqSel && d.adquirente) { adqSel.value = d.adquirente; }
+  document.getElementById('tagBancoAdq').innerHTML = '<span style="background:#0099cc;color:#fff;padding:2px 8px;border-radius:3px;font-size:10px">' + (d.adquirente||'Rede') + ' ✕</span>';
+
+  var h = '';
+
+  // TAG adquirente
+  document.getElementById('tagBancoAdq').innerHTML = '<span style="background:#0099cc;color:#fff;padding:2px 8px;border-radius:3px;font-size:10px">' + d.adquirente + ' ✕</span>';
+
+  // NIVEL 1: Resumo por data
+  h += '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:4px">';
+  h += '<thead><tr>';
+  h += '<th rowspan="2" style="background:#0099cc;color:#fff;padding:8px;border:1px solid #0088bb;text-align:left">Data do Lancamento</th>';
+  h += '<th rowspan="2" style="background:#0099cc;color:#fff;padding:8px;border:1px solid #0088bb;text-align:right">Ordens de Pagamento</th>';
+  h += '<th colspan="7" style="background:#0099cc;color:#fff;padding:6px;border:1px solid #0088bb;text-align:center">Adquirente</th>';
+  h += '<th colspan="2" style="background:#0099cc;color:#fff;padding:6px;border:1px solid #0088bb;text-align:center">Diferenca</th>';
+  h += '<th rowspan="2" style="background:#0099cc;color:#fff;padding:8px;border:1px solid #0088bb;text-align:center">Conciliado</th>';
+  h += '</tr><tr>';
+  ['Conciliado','Nao conciliado','Inexistente','Liquido','Credito','Debito','Total','Taxa','Banco'].forEach(function(c) {
+    h += '<th style="background:#0099cc;color:#fff;padding:6px;border:1px solid #0088bb;text-align:right;font-size:10px">'+c+'</th>';
+  });
+  h += '</tr></thead><tbody>';
+
+  var concIcon = r.conciliada ? '<span style="color:#27ae60;font-size:14px">✔</span>' : '<span style="color:#E41E2B;font-size:14px">✘</span>';
+  h += '<tr style="background:#fff">';
+  h += '<td style="padding:8px 12px;border:1px solid #ddd;font-weight:600">' + d.data + '</td>';
+  h += '<td style="padding:8px 12px;border:1px solid #ddd;text-align:right">'+fmt(r.totalOrdens)+'</td>';
+  h += '<td style="padding:8px 12px;border:1px solid #ddd;text-align:right">'+fmt(r.totalAdqLiquido)+'</td>';
+  h += '<td style="padding:8px 12px;border:1px solid #ddd;text-align:right">0,00</td>';
+  h += '<td style="padding:8px 12px;border:1px solid #ddd;text-align:right">0,00</td>';
+  h += '<td style="padding:8px 12px;border:1px solid #ddd;text-align:right">'+fmt(r.totalAdqLiquido)+'</td>';
+  h += '<td style="padding:8px 12px;border:1px solid #ddd;text-align:right">'+fmt(r.totalAdqCredito)+'</td>';
+  h += '<td style="padding:8px 12px;border:1px solid #ddd;text-align:right">'+fmt(r.totalAdqDebito)+'</td>';
+  h += '<td style="padding:8px 12px;border:1px solid #ddd;text-align:right">'+fmt(r.totalAdqLiquido)+'</td>';
+  h += '<td style="padding:8px 12px;border:1px solid #ddd;text-align:right;color:#E41E2B">'+fmt(r.difTaxa)+'</td>';
+  h += '<td style="padding:8px 12px;border:1px solid #ddd;text-align:right;color:'+(r.difBanco!=0?'#E41E2B':'#333')+'">'+fmt(r.difBanco)+'</td>';
+  h += '<td style="padding:8px 12px;border:1px solid #ddd;text-align:center">'+concIcon+'</td>';
+  h += '</tr></tbody></table>';
+
+  // NIVEL 2: Por conta bancaria
+  h += '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:4px">';
+  h += '<thead><tr>';
+  h += '<th style="background:#0099cc;color:#fff;padding:8px;border:1px solid #0088bb;text-align:left">Conta</th>';
+  h += '<th style="background:#0099cc;color:#fff;padding:8px;border:1px solid #0088bb;text-align:right">Ordens pagamento</th>';
+  h += '<th style="background:#0099cc;color:#fff;padding:8px;border:1px solid #0088bb">Empresa Gmat</th>';
+  h += '<th colspan="7" style="background:#0099cc;color:#fff;padding:6px;border:1px solid #0088bb;text-align:center">Adquirente</th>';
+  h += '<th colspan="2" style="background:#0099cc;color:#fff;padding:6px;border:1px solid #0088bb;text-align:center">Diferenca</th>';
+  h += '<th style="background:#0099cc;color:#fff;padding:8px;border:1px solid #0088bb;text-align:center">Conciliado</th>';
+  h += '</tr></thead><tbody>';
+  h += '<tr style="background:#fff">';
+  h += '<td style="padding:8px;border:1px solid #ddd;font-weight:600">'+d.conta+'</td>';
+  h += '<td style="padding:8px;border:1px solid #ddd;text-align:right">'+fmt(r.totalOrdens)+'</td>';
+  h += '<td style="padding:8px;border:1px solid #ddd">'+d.empresa+' LTDA</td>';
+  h += '<td style="padding:8px;border:1px solid #ddd;text-align:right">'+fmt(r.totalAdqLiquido)+'</td>';
+  h += '<td style="padding:8px;border:1px solid #ddd;text-align:right">0,00</td>';
+  h += '<td style="padding:8px;border:1px solid #ddd;text-align:right">0,00</td>';
+  h += '<td style="padding:8px;border:1px solid #ddd;text-align:right">'+fmt(r.totalAdqLiquido)+'</td>';
+  h += '<td style="padding:8px;border:1px solid #ddd;text-align:right">'+fmt(r.totalAdqCredito)+'</td>';
+  h += '<td style="padding:8px;border:1px solid #ddd;text-align:right">'+fmt(r.totalAdqDebito)+'</td>';
+  h += '<td style="padding:8px;border:1px solid #ddd;text-align:right">'+fmt(r.totalAdqLiquido)+'</td>';
+  h += '<td style="padding:8px;border:1px solid #ddd;text-align:right;color:#E41E2B">'+fmt(r.difTaxa)+'</td>';
+  h += '<td style="padding:8px;border:1px solid #ddd;text-align:right;color:'+(r.difBanco!=0?'#E41E2B':'#333')+'">'+fmt(r.difBanco)+'</td>';
+  h += '<td style="padding:8px;border:1px solid #ddd;text-align:center">'+concIcon+'</td>';
+  h += '</tr></tbody></table>';
+
+  // Botao download todos
+  h += '<div style="display:flex;justify-content:flex-end;margin:8px 0;gap:6px">';
+  h += '<button onclick="downloadTodosEnvios()" style="background:#27ae60;color:#fff;border:none;padding:6px 16px;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer">⬇ Baixar Todos (ZIP)</button>';
+  h += '</div>';
+
+  // NIVEL 3: Detalhe por bandeira/natureza
+  h += '<table style="width:100%;border-collapse:collapse;font-size:11px">';
+  h += '<thead><tr>';
+  h += '<th colspan="5" style="background:#0099cc;color:#fff;padding:6px;border:1px solid #0088bb;text-align:center">Ordens Pagamento</th>';
+  h += '<th colspan="7" style="background:#0099cc;color:#fff;padding:6px;border:1px solid #0088bb;text-align:center">Adquirente</th>';
+  h += '<th colspan="2" style="background:#0099cc;color:#fff;padding:6px;border:1px solid #0088bb;text-align:center">Diferenca</th>';
+  h += '<th style="background:#0099cc;color:#fff;padding:6px;border:1px solid #0088bb">Origem</th>';
+  h += '<th style="background:#0099cc;color:#fff;padding:6px;border:1px solid #0088bb;text-align:center">Conciliado</th>';
+  h += '<th style="background:#0099cc;color:#fff;padding:6px;border:1px solid #0088bb;text-align:center">Acoes</th>';
+  h += '</tr><tr>';
+  ['Historico','Rede','Bandeira','Natureza','Valor'].forEach(function(c) {
+    h += '<th style="background:#0099cc;color:#fff;padding:5px;border:1px solid #0088bb;font-size:10px">'+c+'</th>';
+  });
+  ['Conciliado','Nao conciliado','Inexistente','Liquido','Credito','Debito','Total'].forEach(function(c) {
+    h += '<th style="background:#0099cc;color:#fff;padding:5px;border:1px solid #0088bb;font-size:10px;text-align:right">'+c+'</th>';
+  });
+  ['Taxa','Banco'].forEach(function(c) {
+    h += '<th style="background:#0099cc;color:#fff;padding:5px;border:1px solid #0088bb;font-size:10px;text-align:right">'+c+'</th>';
+  });
+  h += '<th style="background:#0099cc;color:#fff;padding:5px;border:1px solid #0088bb;font-size:10px"></th>';
+  h += '<th style="background:#0099cc;color:#fff;padding:5px;border:1px solid #0088bb;font-size:10px;text-align:center"></th>';
+  h += '</tr></thead><tbody>';
+
+  d.detalhe.forEach(function(det, i) {
+    var bg = i % 2 === 0 ? '#fff' : '#f8f8f8';
+    var natLabel = det.natureza === 'CREDITO' ? 'CREDITO' : 'DEBITO';
+    h += '<tr style="background:'+bg+'">';
+    h += '<td style="padding:6px;border:1px solid #ddd;font-size:10px">REDE '+det.bandeira+' '+(det.natureza==='CREDITO'?'CD':'DB')+'0102737975</td>';
+    h += '<td style="padding:6px;border:1px solid #ddd">Rede</td>';
+    h += '<td style="padding:6px;border:1px solid #ddd">'+det.bandeira+'</td>';
+    h += '<td style="padding:6px;border:1px solid #ddd">'+natLabel+'</td>';
+    h += '<td style="padding:6px;border:1px solid #ddd;text-align:right">'+fmt(det.valor)+'</td>';
+    // Adquirente
+    h += '<td style="padding:6px;border:1px solid #ddd;text-align:right;color:#27ae60;font-weight:600">'+fmt(det.adqConciliado||0)+'</td>';
+    h += '<td style="padding:6px;border:1px solid #ddd;text-align:right;color:'+(det.adqNaoConciliado>0?'#E41E2B':'#333')+'">'+fmt(det.adqNaoConciliado||0)+'</td>';
+    h += '<td style="padding:6px;border:1px solid #ddd;text-align:right">0,00</td>';
+    h += '<td style="padding:6px;border:1px solid #ddd;text-align:right">'+fmt(det.adqLiquido||det.valor)+'</td>';
+    h += '<td style="padding:6px;border:1px solid #ddd;text-align:right">0,00</td>';
+    h += '<td style="padding:6px;border:1px solid #ddd;text-align:right">0,00</td>';
+    h += '<td style="padding:6px;border:1px solid #ddd;text-align:right">'+fmt(det.adqTotal)+'</td>';
+    // Diferenca
+    h += '<td style="padding:6px;border:1px solid #ddd;text-align:right;color:#E41E2B">'+fmt(det.difTaxa)+'</td>';
+    h += '<td style="padding:6px;border:1px solid #ddd;text-align:right;color:'+(det.difBanco!=0?'#E41E2B':'#333')+'">'+fmt(det.difBanco)+'</td>';
+    h += '<td style="padding:6px;border:1px solid #ddd">AGENDA</td>';
+    h += '<td style="padding:6px;border:1px solid #ddd;text-align:center"><span style="color:'+(det.conciliada?'#27ae60':'#E41E2B')+';font-size:14px">'+(det.conciliada?'✔':'✘')+'</span></td>';
+    h += '<td style="padding:4px;border:1px solid #ddd;text-align:center;white-space:nowrap">';
+    if (det.conciliada) {
+      h += '<button onclick="conciliarLinha('+i+')" style="background:#27ae60;color:#fff;border:none;padding:3px 6px;border-radius:3px;cursor:pointer;font-size:10px;margin:1px" title="Conciliado">✔</button>';
+      h += '<button onclick="verLinha('+i+')" style="background:#0099cc;color:#fff;border:none;padding:3px 6px;border-radius:3px;cursor:pointer;font-size:10px;margin:1px" title="Ver detalhes">🔍</button>';
+      h += '<button onclick="downloadEnvio('+i+')" style="background:#e67e22;color:#fff;border:none;padding:3px 6px;border-radius:3px;cursor:pointer;font-size:10px;margin:1px" title="Download JSON">⬇</button>';
+      h += '<button onclick="downloadEnvio('+i+')" style="background:#8e44ad;color:#fff;border:none;padding:3px 6px;border-radius:3px;cursor:pointer;font-size:10px;margin:1px" title="Baixar JSON">📤</button>';
+    } else {
+      h += '<span style="background:#ccc;color:#666;padding:3px 8px;border-radius:3px;font-size:10px">Pendente</span>';
+    }
+    h += '</td>';
+    h += '</tr>';
+  });
+
+  // Total
+  h += '<tr style="background:#0099cc;color:#fff;font-weight:600">';
+  h += '<td colspan="4" style="padding:6px;border:1px solid #0088bb">Total</td>';
+  h += '<td style="padding:6px;border:1px solid #0088bb;text-align:right">'+fmt(r.totalOrdens)+'</td>';
+  h += '<td style="padding:6px;border:1px solid #0088bb;text-align:right">'+fmt(r.totalAdqLiquido)+'</td>';
+  h += '<td style="padding:6px;border:1px solid #0088bb;text-align:right">0,00</td>';
+  h += '<td style="padding:6px;border:1px solid #0088bb;text-align:right">0,00</td>';
+  h += '<td style="padding:6px;border:1px solid #0088bb;text-align:right">'+fmt(r.totalAdqLiquido)+'</td>';
+  h += '<td style="padding:6px;border:1px solid #0088bb;text-align:right">'+fmt(r.totalAdqCredito)+'</td>';
+  h += '<td style="padding:6px;border:1px solid #0088bb;text-align:right">'+fmt(r.totalAdqDebito)+'</td>';
+  h += '<td style="padding:6px;border:1px solid #0088bb;text-align:right">'+fmt(r.totalAdqLiquido)+'</td>';
+  h += '<td style="padding:6px;border:1px solid #0088bb;text-align:right">'+fmt(r.difTaxa)+'</td>';
+  h += '<td style="padding:6px;border:1px solid #0088bb;text-align:right;color:'+(r.difBanco!=0?'#ffcccc':'#fff')+'">'+fmt(r.difBanco)+'</td>';
+  h += '<td colspan="2" style="padding:6px;border:1px solid #0088bb"></td>';
+  h += '</tr>';
+  h += '</tbody></table>';
+
+  document.getElementById('bancoContent').innerHTML = h;
+}
+
+// === PAGINA CONCILIACAO DE TAXA ===
+let TAXAS = null;
+
+function renderTaxas() {
+  try {
+    document.getElementById('taxasContent').innerHTML = '<div style="padding:20px;text-align:center;color:#5a6b7c">Carregando...</div>';
+    if (TAXAS) { renderTaxasPage(); return; }
+    fetch('conciliacao-taxas.json')
+      .then(function(r) { return r.json(); })
+      .then(function(d) { TAXAS = d; renderTaxasPage(); })
+      .catch(function(e) { document.getElementById('taxasContent').innerHTML = '<p style="color:red;padding:20px">Erro: '+e.message+'</p>'; });
+  } catch(e) {
+    document.getElementById('taxasContent').innerHTML = '<p style="color:red;padding:20px">Erro: '+e.message+'</p>';
+  }
+}
+
+function renderTaxasPage() {
+  const d = TAXAS;
+  let linhas = d.linhasAgrupadas || [];
+
+  // Ler filtros
+  const filtroAdq = document.getElementById('filtroTaxaAdq')?.value || '';
+  const filtroBandeira = document.getElementById('filtroTaxaBandeira')?.value || '';
+  const filtroPlano = document.getElementById('filtroTaxaPlano')?.value || '';
+  const filtroConc = document.querySelector('input[name="filtroTaxaConc"]:checked')?.value || '';
+
+  // Setar adquirente
+  if (d.adquirente && document.getElementById('filtroTaxaAdq')) {
+    document.getElementById('filtroTaxaAdq').value = d.adquirente;
+    document.getElementById('tagTaxaAdq').innerHTML = '<span style="background:#0099cc;color:#fff;padding:2px 8px;border-radius:3px;font-size:10px">' + d.adquirente + ' <span onclick="document.getElementById(\'filtroTaxaAdq\').value=\'\';document.getElementById(\'tagTaxaAdq\').innerHTML=\'\'" style="cursor:pointer;margin-left:4px">✕</span></span>';
+  }
+
+  // Filtrar adquirente
+  if (filtroAdq && d.adquirente && filtroAdq !== d.adquirente) {
+    document.getElementById('taxasContent').innerHTML = '<div style="padding:40px;text-align:center;color:#5a6b7c">Nenhum dado para <strong>' + filtroAdq + '</strong>.</div>';
+    return;
+  }
+
+  // Filtrar bandeira
+  if (filtroBandeira) linhas = linhas.filter(function(l) { return l.bandeira === filtroBandeira; });
+
+  // Filtrar plano
+  if (filtroPlano) linhas = linhas.filter(function(l) { return String(l.plano) === filtroPlano; });
+
+  // Filtrar conciliada
+  if (filtroConc === 'sim') linhas = linhas.filter(function(l) { return l.conciliada; });
+  else if (filtroConc === 'nao') linhas = linhas.filter(function(l) { return !l.conciliada; });
+  else if (filtroConc === 'menor') linhas = linhas.filter(function(l) { return l.diferenca < -0.5; });
+  else if (filtroConc === 'maior') linhas = linhas.filter(function(l) { return l.diferenca > 0.5; });
+
+  var h = '';
+
+  // Tabela estilo Statix
+  h += '<table style="width:100%;border-collapse:collapse;font-size:12px">';
+  h += '<thead>';
+  h += '<tr>';
+  h += '<th rowspan="2" style="background:#0099cc;color:#fff;padding:8px;border:1px solid #0088bb;text-align:left">Data da Venda</th>';
+  h += '<th rowspan="2" style="background:#0099cc;color:#fff;padding:8px;border:1px solid #0088bb">Adquirente</th>';
+  h += '<th rowspan="2" style="background:#0099cc;color:#fff;padding:8px;border:1px solid #0088bb">Bandeira</th>';
+  h += '<th rowspan="2" style="background:#0099cc;color:#fff;padding:8px;border:1px solid #0088bb">Plano</th>';
+  h += '<th rowspan="2" style="background:#0099cc;color:#fff;padding:8px;border:1px solid #0088bb">Natureza</th>';
+  h += '<th rowspan="2" style="background:#0099cc;color:#fff;padding:8px;border:1px solid #0088bb;text-align:right">Valor da Venda</th>';
+  h += '<th colspan="2" style="background:#0099cc;color:#fff;padding:6px;border:1px solid #0088bb;text-align:center">Previsto</th>';
+  h += '<th colspan="2" style="background:#0099cc;color:#fff;padding:6px;border:1px solid #0088bb;text-align:center">Realizado</th>';
+  h += '<th rowspan="2" style="background:#0099cc;color:#fff;padding:8px;border:1px solid #0088bb;text-align:right">Diferenca</th>';
+  h += '<th rowspan="2" style="background:#0099cc;color:#fff;padding:8px;border:1px solid #0088bb;text-align:center">Conciliada</th>';
+  h += '</tr><tr>';
+  h += '<th style="background:#0099cc;color:#fff;padding:6px;border:1px solid #0088bb;text-align:center">(%) Taxa Adm</th>';
+  h += '<th style="background:#0099cc;color:#fff;padding:6px;border:1px solid #0088bb;text-align:right">Valor Taxa Adm</th>';
+  h += '<th style="background:#0099cc;color:#fff;padding:6px;border:1px solid #0088bb;text-align:center">(%) Taxa Adm</th>';
+  h += '<th style="background:#0099cc;color:#fff;padding:6px;border:1px solid #0088bb;text-align:right">Valor Taxa Adm</th>';
+  h += '</tr></thead><tbody>';
+
+  linhas.forEach(function(l, i) {
+    var bg = i % 2 === 0 ? '#fff' : '#f8f8f8';
+    var difColor = l.diferenca > 0.5 ? '#E41E2B' : l.diferenca < -0.5 ? '#E41E2B' : '#333';
+    var concIcon = l.conciliada ? '<span style="color:#27ae60;font-size:14px">✔</span>' : '<span style="color:#E41E2B;font-size:14px">✘</span>';
+    var dataBR = l.data ? l.data.split('-').reverse().join('/') : '';
+
+    h += '<tr style="background:' + bg + '">';
+    h += '<td style="padding:8px;border:1px solid #ddd">' + dataBR + '</td>';
+    h += '<td style="padding:8px;border:1px solid #ddd;text-align:center">' + l.adquirente + '</td>';
+    h += '<td style="padding:8px;border:1px solid #ddd;text-align:center;font-weight:600">' + l.bandeira + '</td>';
+    h += '<td style="padding:8px;border:1px solid #ddd;text-align:center">' + l.plano + '</td>';
+    h += '<td style="padding:8px;border:1px solid #ddd;text-align:center">' + l.natureza + '</td>';
+    h += '<td style="padding:8px;border:1px solid #ddd;text-align:right">' + fmt(l.valorVenda) + '</td>';
+    h += '<td style="padding:8px;border:1px solid #ddd;text-align:center">' + l.taxaPrevistaPct.toFixed(2) + '</td>';
+    h += '<td style="padding:8px;border:1px solid #ddd;text-align:right">' + fmt(l.valorTaxaPrevista) + '</td>';
+    h += '<td style="padding:8px;border:1px solid #ddd;text-align:center">' + l.taxaRealizadaPct.toFixed(2) + '</td>';
+    h += '<td style="padding:8px;border:1px solid #ddd;text-align:right">' + fmt(l.valorTaxaRealizada) + '</td>';
+    h += '<td style="padding:8px;border:1px solid #ddd;text-align:right;color:' + difColor + ';font-weight:600">' + fmt(l.diferenca) + '</td>';
+    h += '<td style="padding:8px;border:1px solid #ddd;text-align:center">' + concIcon + '</td>';
+    h += '</tr>';
+  });
+
+  h += '</tbody></table>';
+  document.getElementById('taxasContent').innerHTML = h;
+}
+
+function updateTagAdquirente() {
+  const sel = document.getElementById('filtroAdquirente');
+  const tag = document.getElementById('tagAdquirente');
+  if (sel.value) {
+    tag.innerHTML = '<span style="background:#0099cc;color:#fff;padding:2px 8px;border-radius:3px;font-size:10px">' + sel.value + ' <span onclick="document.getElementById(\'filtroAdquirente\').value=\'\';updateTagAdquirente()" style="cursor:pointer;margin-left:4px">✕</span></span>';
+  } else {
+    tag.innerHTML = '';
+  }
+}
+
+function toggleMenu(id) {
+  const menu = document.getElementById(id);
+  const wasHidden = menu.classList.contains('hidden');
+  document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden'));
+  if (wasHidden) menu.classList.remove('hidden');
+}
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.nav-dropdown')) {
+    document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden'));
+  }
+});
+
+// === NAVEGACAO ===
+function navigateTo(page) {
+  document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden'));
+  document.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('pageTripla').style.display = 'none';
+  document.getElementById('pageVendas').style.display = 'none';
+  document.getElementById('pageAdqErp').style.display = 'none';
+  document.getElementById('pageTaxas').style.display = 'none';
+  document.getElementById('pageBanco').style.display = 'none';
+  if (page === 'banco') {
+    document.getElementById('pageBanco').style.display = 'block';
+  } else if (page === 'taxas') {
+    document.getElementById('pageTaxas').style.display = 'block';
+  } else if (page === 'tripla') {
+    document.getElementById('pageTripla').style.display = 'block';
+    carregarTripla();
+  } else if (page === 'vendas') {
+    document.getElementById('pageVendas').style.display = 'block';
+    renderVendas();
+  } else if (page === 'adqerp') {
+    document.getElementById('pageAdqErp').style.display = 'block';
+    renderAdqErp();
+  }
+}
+
+// === PAGINA CONCILIACAO DE VENDAS ===
+function renderVendas() {
+  if (!DATA) return;
+  vendasPage = 0;
+  renderVendasPage();
+}
+
+function renderVendasPage() {
+  const all = [...DATA.conc3vias, ...DATA.cieloFn01, ...DATA.cieloSt02, ...DATA.somenteCielo];
+  const total = all.length;
+  const pages = Math.ceil(total / PAGE_SIZE);
+  const start = vendasPage * PAGE_SIZE;
+  const page = all.slice(start, start + PAGE_SIZE);
+
+  const totalBruto = all.reduce((s,r) => s + r.cBruto, 0);
+  const totalLiq = all.reduce((s,r) => s + r.cLiq, 0);
+  const totalTaxa = all.reduce((s,r) => s + r.cTaxa, 0);
+  const credito = all.filter(r => r.nat === 'Credito').length;
+  const debito = all.filter(r => r.nat === 'Debito').length;
+
+  let h = '';
+  // Cards resumo
+  h += '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:14px 0">';
+  [{l:'REGISTROS',v:fmtn(total),c:'#002B5C'},{l:'CREDITO',v:fmtn(credito),c:'#0066B3'},{l:'DEBITO',v:fmtn(debito),c:'#e67e22'},{l:'TOTAL BRUTO',v:fmt(totalBruto),c:'#002B5C'},{l:'TOTAL LIQUIDO',v:fmt(totalLiq),c:'#27ae60'},{l:'TOTAL TAXA',v:fmt(totalTaxa),c:'#E41E2B'}].forEach(c => {
+    h += '<div style="background:#fff;border-top:3px solid '+c.c+';border:1px solid #d1d9e0;border-radius:4px;padding:12px;text-align:center"><div style="font-size:10px;color:#5a6b7c;text-transform:uppercase">'+c.l+'</div><div style="font-size:20px;font-weight:700;color:'+c.c+'">'+c.v+'</div></div>';
+  });
+  h += '</div>';
+
+  // Info bar
+  h += '<div style="background:#002B5C;color:#fff;padding:8px 16px;border-radius:4px;font-size:13px;margin-bottom:8px">Foi(ram) encontrado(s) '+fmtn(total)+' registro(s) - Pagina '+(vendasPage+1)+' de '+pages+'</div>';
+
+  // Tabela
+  h += '<div class="detail-table-wrap"><table><thead><tr>';
+  ['Data Emissao','Data Pgto','EC','Natureza','Parcelas','NSU','Autorizacao','Valor Bruto','Valor Liquido','Taxa','Status'].forEach(c => h += '<th>'+c+'</th>');
+  h += '</tr></thead><tbody>';
+  page.forEach((r,i) => {
+    const bg = i%2===0?'#fff':'#F5F8FB';
+    const natBg = r.nat==='Debito'?'#e67e22':'#0066B3';
+    const status = (r.fn01Valor!=null && r.st02Valor!=null) ? 'Conciliado' : (r.fn01Valor!=null||r.st02Valor!=null) ? 'Parcial' : 'Pendente';
+    const statusBg = status==='Conciliado'?'#27ae60':status==='Parcial'?'#e67e22':'#E41E2B';
+    h += '<tr style="background:'+bg+'">';
+    h += '<td>'+r.data.split('-').reverse().join('/')+'</td>';
+    h += '<td>'+(r.dataPgto||r.data).split('-').reverse().join('/')+'</td>';
+    h += '<td>'+r.ec+'</td>';
+    h += '<td><span class="badge-nat" style="background:'+natBg+'">'+r.nat+'</span></td>';
+    h += '<td style="text-align:center">'+(r.parc||1)+'</td>';
+    h += '<td class="mono">'+(r.nsu||'-')+'</td>';
+    h += '<td class="mono">'+(r.auth||'-')+'</td>';
+    h += '<td class="right">'+fmt(r.cBruto)+'</td>';
+    h += '<td class="right" style="font-weight:600">'+fmt(r.cLiq)+'</td>';
+    h += '<td class="right red">'+fmt(r.cTaxa)+'</td>';
+    h += '<td><span class="badge-nat" style="background:'+statusBg+'">'+status+'</span></td>';
+    h += '</tr>';
+  });
+  h += '</tbody></table></div>';
+
+  // Paginacao
+  if (pages > 1) {
+    h += '<div class="pagination">';
+    h += '<button onclick="vendasPrev()" '+(vendasPage===0?'disabled':'')+'>◀ Anterior</button>';
+    h += '<span>Pagina '+(vendasPage+1)+' de '+pages+'</span>';
+    h += '<button onclick="vendasNext()" '+(vendasPage>=pages-1?'disabled':'')+'>Proximo ▶</button>';
+    h += '</div>';
+  }
+
+  document.getElementById('vendasContent').innerHTML = h;
+}
+// === PAGINA ADQ x ERP (estilo Statix) ===
+let VISAO = null;
+let modalBand = null;
+let modalPage = 0;
+const MODAL_PAGE_SIZE = 30;
+
+function renderAdqErp() {
+  try {
+    document.getElementById('adqErpContent').innerHTML = '<div style="padding:40px;text-align:center;color:#5a6b7c">Carregando dados...</div>';
+    if (VISAO) {
+      renderAdqErpPage();
+      return;
+    }
+    fetch('conciliacao-visao-vendas.json')
+      .then(function(r) { if (!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(function(d) { VISAO = d; renderAdqErpPage(); })
+      .catch(function(e) { document.getElementById('adqErpContent').innerHTML = '<p style="color:red;padding:20px">Erro ao carregar: '+e.message+'</p>'; });
+  } catch(e) {
+    document.getElementById('adqErpContent').innerHTML = '<p style="color:red;padding:20px">Erro JS: '+e.message+'</p>';
+  }
+}
+
+var modalItems = [];
+var modalSortDir = {};
+
+function sortModal(side, colIdx) {
+  // Mapear coluna para campo
+  var cliFields = ['cTitulo','cData','cNsu','cAuth','cPlano','cValor'];
+  var adqFields = ['aData','aNsu','aAuth','aPlano','aValor','aMeio'];
+  var field = side === 'cli' ? cliFields[colIdx] : adqFields[colIdx];
+  if (!field) return;
+
+  // Toggle direcao
+  var key = side + colIdx;
+  modalSortDir[key] = modalSortDir[key] === 'desc' ? 'asc' : 'desc';
+  var desc = modalSortDir[key] === 'desc';
+
+  modalItems.sort(function(a, b) {
+    var va = a[field] || '';
+    var vb = b[field] || '';
+    // Tentar numerico
+    var na = parseFloat(va);
+    var nb = parseFloat(vb);
+    if (!isNaN(na) && !isNaN(nb)) {
+      return desc ? nb - na : na - nb;
+    }
+    // String
+    var sa = String(va).toLowerCase();
+    var sb = String(vb).toLowerCase();
+    if (sa < sb) return desc ? 1 : -1;
+    if (sa > sb) return desc ? -1 : 1;
+    return 0;
+  });
+
+  // Renumerar
+  modalItems.forEach(function(r, i) { r.num = i + 1; });
+  modalPage = 0;
+  renderModalPage();
+}
+
+function expandirDiaVenda(idx) {
+  var row = document.getElementById('detalheDia' + idx);
+  var content = document.getElementById('detalheDiaContent' + idx);
+  if (!row || !content) return;
+
+  // Toggle
+  if (row.style.display !== 'none') {
+    row.style.display = 'none';
+    return;
+  }
+
+  // Fechar outros
+  for (var i = 0; i < 20; i++) {
+    var other = document.getElementById('detalheDia' + i);
+    if (other && i !== idx) other.style.display = 'none';
+  }
+
+  row.style.display = '';
+  var d = window._todasConc[idx];
+  if (!d || !d.resumo) { content.innerHTML = '<p style="padding:12px;color:#999">Sem detalhe.</p>'; return; }
+
+  var hd = renderAdqErpDia(d, idx);
+  content.innerHTML = hd;
+
+  // Carregar graficos desse dia
+  setTimeout(function() {
+    try {
+      var resumo = d.resumo || [];
+      if (resumo.length === 0) return;
+      var labels = resumo.map(function(r) { return r.bandeira; });
+      var cliData = resumo.map(function(r) { return r.clienteQtd; });
+      var adqData = resumo.map(function(r) { return r.adqQtd; });
+      var cliVal = resumo.map(function(r) { return r.clienteValor; });
+      var adqVal = resumo.map(function(r) { return r.adqValor; });
+
+      var ctxPizza = document.getElementById('chartPizza');
+      var ctxQtd = document.getElementById('chartBarrasQtd');
+      var ctxVal = document.getElementById('chartBarrasVal');
+
+      if (chartPizzaInst) { chartPizzaInst.destroy(); chartPizzaInst = null; }
+      if (chartQtdInst) { chartQtdInst.destroy(); chartQtdInst = null; }
+      if (chartValInst) { chartValInst.destroy(); chartValInst = null; }
+
+      if (ctxPizza && typeof Chart !== 'undefined') {
+        var totalConc = d.totalConciliados || 0;
+        var totalNaoConc = d.totalNaoConciliados || (d.totalAdq ? d.totalAdq.qtd - totalConc : 0);
+        chartPizzaInst = new Chart(ctxPizza, {
+          type: 'doughnut',
+          data: { labels: ['Conciliado','Nao Conciliado'], datasets: [{ data: [totalConc, totalNaoConc], backgroundColor: ['#27ae60','#E41E2B'] }] },
+          options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } }, title: { display: true, text: 'Conciliacao ' + d.data, font: { size: 12 } } } }
+        });
+      }
+      if (ctxQtd && typeof Chart !== 'undefined') {
+        chartQtdInst = new Chart(ctxQtd, {
+          type: 'bar',
+          data: { labels: labels, datasets: [{ label: 'Cliente', data: cliData, backgroundColor: '#0066B3' }, { label: 'Adquirente', data: adqData, backgroundColor: '#E41E2B' }] },
+          options: { responsive: true, plugins: { legend: { position: 'bottom' }, title: { display: true, text: 'Quantidade ' + d.data, font: { size: 12 } } } }
+        });
+      }
+      if (ctxVal && typeof Chart !== 'undefined') {
+        chartValInst = new Chart(ctxVal, {
+          type: 'bar',
+          data: { labels: labels, datasets: [{ label: 'Cliente', data: cliVal, backgroundColor: '#0066B3' }, { label: 'Adquirente', data: adqVal, backgroundColor: '#E41E2B' }] },
+          options: { responsive: true, plugins: { legend: { position: 'bottom' }, title: { display: true, text: 'Valor ' + d.data, font: { size: 12 } } }, scales: { y: { ticks: { callback: function(v) { return 'R$' + (v/1000).toFixed(0) + 'k'; } } } } }
+        });
+      }
+    } catch(e) { console.log('Chart error:', e); }
+  }, 200);
+}
+
+function getVisaoByDate() {
+  var raw = VISAO;
+  if (!raw) return null;
+
+  // Se tem multiplas conciliacoes
+  if (raw.conciliacoes) {
+    var dataFiltro = document.getElementById('filtroDataIni')?.value || '';
+    if (dataFiltro) {
+      var p = dataFiltro.split('-');
+      var dataFmt = p[2]+'/'+p[1]+'/'+p[0];
+      var found = raw.conciliacoes.find(function(c) { return c.data === dataFmt; });
+      if (found) return found;
+    }
+    // Retornar ultima se nao achar
+    return raw.conciliacoes[raw.conciliacoes.length - 1];
+  }
+  return raw;
+}
+
+function renderAdqErpPage() {
+  var raw = VISAO;
+  if (!raw) { document.getElementById('adqErpContent').innerHTML = '<div style="padding:40px;text-align:center;color:#5a6b7c">Nenhum dado.</div>'; return; }
+
+  // Pegar range de datas do filtro
+  var dataIni = document.getElementById('filtroDataIni')?.value || '';
+  var dataFim = document.getElementById('filtroDataFim')?.value || '';
+
+  // Pegar todas as conciliacoes dentro do range
+  var todasConc = [];
+  if (raw.conciliacoes) {
+    for (var ci = 0; ci < raw.conciliacoes.length; ci++) {
+      var c = raw.conciliacoes[ci];
+      // Converter data DD/MM/YYYY para YYYY-MM-DD para comparar
+      var p = c.data.split('/');
+      var cISO = p[2] + '-' + p[1] + '-' + p[0];
+      if ((!dataIni || cISO >= dataIni) && (!dataFim || cISO <= dataFim)) {
+        todasConc.push(c);
+      }
+    }
+  } else if (raw.resumo) {
+    todasConc.push(raw);
+  }
+
+  if (todasConc.length === 0) {
+    document.getElementById('adqErpContent').innerHTML = '<div style="padding:40px;text-align:center;color:#5a6b7c">Nenhum dado encontrado para o periodo selecionado.</div>';
+    return;
+  }
+
+  // Tabela resumo com todas as datas
+  var h = '';
+
+  // Header tabela resumo
+  h += '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px">';
+  h += '<thead><tr>';
+  h += '<th rowspan="2" style="background:#0099cc;color:#fff;padding:8px 12px;border:1px solid #0088bb;text-align:left">Data da Venda</th>';
+  h += '<th colspan="2" style="background:#0099cc;color:#fff;padding:6px 12px;border:1px solid #0088bb;text-align:center">Cliente (ERP)</th>';
+  h += '<th colspan="2" style="background:#0099cc;color:#fff;padding:6px 12px;border:1px solid #0088bb;text-align:center">Adquirente</th>';
+  h += '<th rowspan="2" style="background:#0099cc;color:#fff;padding:8px;border:1px solid #0088bb;text-align:center">Conciliada</th>';
+  h += '<th rowspan="2" style="background:#0099cc;color:#fff;padding:8px;border:1px solid #0088bb;text-align:center">Detalhe</th>';
+  h += '</tr><tr>';
+  h += '<th style="background:#0099cc;color:#fff;padding:6px 12px;border:1px solid #0088bb;text-align:center">Quantidade</th>';
+  h += '<th style="background:#0099cc;color:#fff;padding:6px 12px;border:1px solid #0088bb;text-align:right">Valor</th>';
+  h += '<th style="background:#0099cc;color:#fff;padding:6px 12px;border:1px solid #0088bb;text-align:center">Quantidade</th>';
+  h += '<th style="background:#0099cc;color:#fff;padding:6px 12px;border:1px solid #0088bb;text-align:right">Valor</th>';
+  h += '</tr></thead><tbody>';
+
+  var grandTotalCli = 0, grandTotalAdq = 0, grandQtdCli = 0, grandQtdAdq = 0;
+  var chartData = [];
+
+  for (var di = 0; di < todasConc.length; di++) {
+    var dd = todasConc[di];
+    if (!dd.totalCliente && !dd.totalAdq) continue;
+    var cliQtd = dd.totalCliente ? dd.totalCliente.qtd : 0;
+    var cliVal = dd.totalCliente ? dd.totalCliente.valor : 0;
+    var adqQtd = dd.totalAdq ? dd.totalAdq.qtd : 0;
+    var adqVal = dd.totalAdq ? dd.totalAdq.valor : 0;
+    var conc = adqQtd > 0 && cliQtd === adqQtd && Math.abs(cliVal - adqVal) < 1;
+    var concIcon = conc ? '<span style="color:#27ae60;font-size:14px">✔</span>' : '<span style="color:#E41E2B;font-size:14px">✘</span>';
+
+    grandTotalCli += cliVal; grandTotalAdq += adqVal; grandQtdCli += cliQtd; grandQtdAdq += adqQtd;
+    chartData.push({ data: dd.data, cliVal: cliVal, adqVal: adqVal });
+
+    var bg = di % 2 === 0 ? '#fff' : '#f8f8f8';
+    h += '<tr style="background:' + bg + ';cursor:pointer" onclick="expandirDiaVenda(' + di + ')">';
+    h += '<td style="padding:10px 12px;border:1px solid #ddd;font-weight:600;color:#0066B3">' + dd.data + '</td>';
+    h += '<td style="padding:10px 12px;border:1px solid #ddd;text-align:center">' + fmtn(cliQtd) + '</td>';
+    h += '<td style="padding:10px 12px;border:1px solid #ddd;text-align:right">' + fmt(cliVal) + '</td>';
+    h += '<td style="padding:10px 12px;border:1px solid #ddd;text-align:center">' + fmtn(adqQtd) + '</td>';
+    h += '<td style="padding:10px 12px;border:1px solid #ddd;text-align:right">' + fmt(adqVal) + '</td>';
+    h += '<td style="padding:10px 12px;border:1px solid #ddd;text-align:center">' + concIcon + '</td>';
+    h += '<td style="padding:10px 12px;border:1px solid #ddd;text-align:center"><button onclick="event.stopPropagation();expandirDiaVenda(' + di + ')" style="background:#0099cc;color:#fff;border:none;padding:4px 10px;border-radius:3px;cursor:pointer;font-size:11px">▶ Ver</button></td>';
+    h += '</tr>';
+
+    // Div oculta para detalhe
+    h += '<tr id="detalheDia' + di + '" style="display:none"><td colspan="7" style="padding:0;border:none">';
+    h += '<div id="detalheDiaContent' + di + '"></div>';
+    h += '</td></tr>';
+  }
+
+  // Total
+  h += '<tr style="background:#0099cc;color:#fff;font-weight:600">';
+  h += '<td style="padding:8px 12px;border:1px solid #0088bb">Total</td>';
+  h += '<td style="padding:8px 12px;border:1px solid #0088bb;text-align:center">' + fmtn(grandQtdCli) + '</td>';
+  h += '<td style="padding:8px 12px;border:1px solid #0088bb;text-align:right">' + fmt(grandTotalCli) + '</td>';
+  h += '<td style="padding:8px 12px;border:1px solid #0088bb;text-align:center">' + fmtn(grandQtdAdq) + '</td>';
+  h += '<td style="padding:8px 12px;border:1px solid #0088bb;text-align:right">' + fmt(grandTotalAdq) + '</td>';
+  h += '<td colspan="2" style="padding:8px 12px;border:1px solid #0088bb"></td>';
+  h += '</tr></tbody></table>';
+
+  // Grafico geral com todas as datas
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">';
+  h += '<div style="background:#fff;border:1px solid #ddd;border-radius:4px;padding:12px"><canvas id="chartVendaGeral" height="200"></canvas></div>';
+  h += '<div style="background:#fff;border:1px solid #ddd;border-radius:4px;padding:12px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+  h += '<div style="text-align:center;padding:12px"><div style="font-size:10px;color:#5a6b7c">TOTAL CLIENTE</div><div style="font-size:22px;font-weight:700;color:#0066B3">' + fmt(grandTotalCli) + '</div></div>';
+  h += '<div style="text-align:center;padding:12px"><div style="font-size:10px;color:#5a6b7c">TOTAL ADQUIRENTE</div><div style="font-size:22px;font-weight:700;color:#E41E2B">' + fmt(grandTotalAdq) + '</div></div>';
+  h += '<div style="text-align:center;padding:12px"><div style="font-size:10px;color:#5a6b7c">DIFERENCA</div><div style="font-size:22px;font-weight:700;color:#e67e22">' + fmt(grandTotalCli - grandTotalAdq) + '</div></div>';
+  h += '<div style="text-align:center;padding:12px"><div style="font-size:10px;color:#5a6b7c">DIAS</div><div style="font-size:22px;font-weight:700;color:#002B5C">' + todasConc.length + '</div></div>';
+  h += '</div></div></div>';
+
+  document.getElementById('adqErpContent').innerHTML = h;
+
+  // Renderizar grafico
+  try {
+    var ctx = document.getElementById('chartVendaGeral');
+    if (ctx && typeof Chart !== 'undefined') {
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: chartData.map(function(d) { return d.data; }),
+          datasets: [
+            { label: 'Cliente (ERP)', data: chartData.map(function(d) { return d.cliVal; }), backgroundColor: '#0066B3' },
+            { label: 'Adquirente', data: chartData.map(function(d) { return d.adqVal; }), backgroundColor: '#E41E2B' }
+          ]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true, ticks: { callback: function(v) { return 'R$ ' + (v/1000).toFixed(0) + 'k'; } } } } }
+      });
+    }
+  } catch(e) {}
+
+  // Guardar conciliacoes para expandir
+  window._todasConc = todasConc;
+  return;
+}
+
+function renderAdqErpDia(d, diaIdx) {
+  // Ler TODOS os filtros
+  const filtroAdquirente = document.getElementById('filtroAdquirente')?.value || '';
+  const filtroConciliada = document.querySelector('input[name="filtroConciliada"]:checked')?.value || '';
+  const filtroBandeira = document.getElementById('filtroBandeira')?.value || '';
+  const filtroProduto = document.getElementById('filtroProduto')?.value || '';
+
+  // Se filtro de adquirente nao bate com os dados carregados, pular
+  if (filtroAdquirente && d.adquirente && filtroAdquirente !== d.adquirente) {
+    return '';
+  }
+
+  // Atualizar tag
+  updateTagAdquirente();
+
+  // Construir resumo baseado no filtro conciliada
+  // Usar detalhe para calcular qtd/valor por tipo
+  let resumoFiltrado = [];
+
+  for (const r of d.resumo) {
+    const det = d.detalhe[r.bandeira] || { conciliados: [], naoConciliados: [] };
+
+    if (filtroBandeira && r.bandeira !== filtroBandeira) continue;
+    if (filtroProduto === 'Voucher' && r.bandeira !== 'Voucher') continue;
+
+    if (filtroConciliada === 'sim') {
+      // Somente conciliados - mostrar bandeira se tem conciliados
+      const conc = det.conciliados || [];
+      if (conc.length === 0) continue;
+      const concClienteVal = conc.reduce((s, c) => s + (c.cValor || 0), 0);
+      const concAdqVal = conc.reduce((s, c) => s + (c.aValor || 0), 0);
+      resumoFiltrado.push({
+        ...r,
+        clienteQtd: conc.filter(c => c.cValor).length,
+        clienteValor: Math.round(concClienteVal * 100) / 100,
+        adqQtd: conc.filter(c => c.aValor).length,
+        adqValor: Math.round(concAdqVal * 100) / 100,
+        conciliada: true,
+      });
+    } else if (filtroConciliada === 'nao') {
+      // Somente nao conciliados
+      const naoConc = det.naoConciliados || [];
+      if (naoConc.length === 0) continue;
+      const ncCliente = naoConc.filter(c => c.tipo === 'erp');
+      const ncAdq = naoConc.filter(c => c.tipo === 'adq');
+      resumoFiltrado.push({
+        ...r,
+        clienteQtd: ncCliente.length,
+        clienteValor: Math.round(ncCliente.reduce((s, c) => s + (c.cValor || 0), 0) * 100) / 100,
+        adqQtd: ncAdq.length,
+        adqValor: Math.round(ncAdq.reduce((s, c) => s + (c.aValor || 0), 0) * 100) / 100,
+        conciliada: false,
+      });
+    } else if (filtroConciliada === 'inex') {
+      if (r.clienteQtd === 0 || r.adqQtd === 0) resumoFiltrado.push(r);
+    } else {
+      // Todos
+      resumoFiltrado.push(r);
+    }
+  }
+
+  // Recalcular totais filtrados
+  const totalClienteQtd = resumoFiltrado.reduce((s, r) => s + r.clienteQtd, 0);
+  const totalClienteValor = resumoFiltrado.reduce((s, r) => s + r.clienteValor, 0);
+  const totalAdqQtd = resumoFiltrado.reduce((s, r) => s + r.adqQtd, 0);
+  const totalAdqValor = resumoFiltrado.reduce((s, r) => s + r.adqValor, 0);
+
+  let h = '';
+
+  // Mostrar filtros ativos
+  const filtrosAtivos = [];
+  if (filtroBandeira) filtrosAtivos.push('Bandeira: ' + filtroBandeira);
+  if (filtroProduto) filtrosAtivos.push('Produto: ' + filtroProduto);
+  if (filtroConciliada === 'sim') filtrosAtivos.push('Conciliada: Sim');
+  if (filtroConciliada === 'nao') filtrosAtivos.push('Conciliada: Nao');
+  if (filtroConciliada === 'inex') filtrosAtivos.push('Conciliada: Inexistente');
+  if (filtrosAtivos.length > 0) {
+    h += '<div style="background:#FFF3CD;border:1px solid #FFEEBA;padding:8px 16px;border-radius:4px;margin-bottom:8px;font-size:12px;color:#856404">Filtros aplicados: <strong>' + filtrosAtivos.join(' | ') + '</strong></div>';
+  }
+
+  // Tabela resumo estilo Statix
+  h += '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:4px">';
+  h += '<thead><tr>';
+  h += '<th rowspan="2" style="background:#0099cc;color:#fff;padding:8px 12px;border:1px solid #0088bb;text-align:left">Data da Venda</th>';
+  h += '<th colspan="2" style="background:#0099cc;color:#fff;padding:6px 12px;border:1px solid #0088bb;text-align:center">Cliente (ERP)</th>';
+  h += '<th colspan="2" style="background:#0099cc;color:#fff;padding:6px 12px;border:1px solid #0088bb;text-align:center">Adquirente</th>';
+  h += '<th rowspan="2" style="background:#0099cc;color:#fff;padding:8px 12px;border:1px solid #0088bb;text-align:center">Conciliada</th>';
+  h += '<th rowspan="2" style="background:#0099cc;color:#fff;padding:8px 12px;border:1px solid #0088bb;text-align:center">Detalhe</th>';
+  h += '</tr><tr>';
+  h += '<th style="background:#0099cc;color:#fff;padding:6px 12px;border:1px solid #0088bb;text-align:center">Quantidade</th>';
+  h += '<th style="background:#0099cc;color:#fff;padding:6px 12px;border:1px solid #0088bb;text-align:right">Valor</th>';
+  h += '<th style="background:#0099cc;color:#fff;padding:6px 12px;border:1px solid #0088bb;text-align:center">Quantidade</th>';
+  h += '<th style="background:#0099cc;color:#fff;padding:6px 12px;border:1px solid #0088bb;text-align:right">Valor</th>';
+  h += '</tr></thead><tbody>';
+
+  // Linha do dia
+  const concDia = Math.abs(totalClienteValor - totalAdqValor) / Math.max(totalAdqValor, 1) < 0.02;
+  h += '<tr style="background:#fff">';
+  h += '<td style="padding:10px 12px;border:1px solid #ddd;font-weight:600">'+d.data+'</td>';
+  h += '<td style="padding:10px 12px;border:1px solid #ddd;text-align:center">'+fmtn(totalClienteQtd)+'</td>';
+  h += '<td style="padding:10px 12px;border:1px solid #ddd;text-align:right">'+fmt(totalClienteValor)+'</td>';
+  h += '<td style="padding:10px 12px;border:1px solid #ddd;text-align:center">'+fmtn(totalAdqQtd)+'</td>';
+  h += '<td style="padding:10px 12px;border:1px solid #ddd;text-align:right">'+fmt(totalAdqValor)+'</td>';
+  h += '<td style="padding:10px 12px;border:1px solid #ddd;text-align:center">'+(concDia?'<span style="color:#27ae60;font-size:16px">✔</span>':'<span style="color:#E41E2B;font-size:16px">✘</span>')+'</td>';
+  h += '<td style="padding:10px 12px;border:1px solid #ddd;text-align:center"></td>';
+  h += '</tr>';
+
+  // Sub-tabela por bandeira
+  h += '<tr><td colspan="7" style="padding:0;border:none">';
+  h += '<table style="width:100%;border-collapse:collapse;font-size:12px">';
+  h += '<thead><tr>';
+  h += '<th style="background:#0099cc;color:#fff;padding:6px 12px;border:1px solid #0088bb">Adquirente</th>';
+  h += '<th style="background:#0099cc;color:#fff;padding:6px 12px;border:1px solid #0088bb">Bandeira</th>';
+  h += '<th style="background:#0099cc;color:#fff;padding:6px 12px;border:1px solid #0088bb;text-align:center">Quantidade</th>';
+  h += '<th style="background:#0099cc;color:#fff;padding:6px 12px;border:1px solid #0088bb;text-align:right">Valor</th>';
+  h += '<th style="background:#0099cc;color:#fff;padding:6px 12px;border:1px solid #0088bb;text-align:center">Quantidade</th>';
+  h += '<th style="background:#0099cc;color:#fff;padding:6px 12px;border:1px solid #0088bb;text-align:right">Valor</th>';
+  h += '<th style="background:#0099cc;color:#fff;padding:6px 12px;border:1px solid #0088bb;text-align:center">Conciliada</th>';
+  h += '<th style="background:#0099cc;color:#fff;padding:6px 12px;border:1px solid #0088bb;text-align:center">Detalhe</th>';
+  h += '</tr></thead><tbody>';
+
+  resumoFiltrado.forEach((r, i) => {
+    const bg = i % 2 === 0 ? '#fff' : '#f8f8f8';
+    h += '<tr style="background:' + bg + '">';
+    h += '<td style="padding:8px 12px;border:1px solid #ddd;text-align:center">' + (d.adquirente || 'N/I') + '</td>';
+    h += '<td style="padding:8px 12px;border:1px solid #ddd;text-align:center;font-weight:600">' + r.bandeira + '</td>';
+    h += '<td style="padding:8px 12px;border:1px solid #ddd;text-align:center">' + fmtn(r.clienteQtd) + '</td>';
+    h += '<td style="padding:8px 12px;border:1px solid #ddd;text-align:right">' + fmt(r.clienteValor) + '</td>';
+    h += '<td style="padding:8px 12px;border:1px solid #ddd;text-align:center">' + fmtn(r.adqQtd) + '</td>';
+    h += '<td style="padding:8px 12px;border:1px solid #ddd;text-align:right">' + fmt(r.adqValor) + '</td>';
+    h += '<td style="padding:8px 12px;border:1px solid #ddd;text-align:center">' + (r.conciliada ? '<span style="color:#27ae60;font-size:16px">✔</span>' : '<span style="color:#E41E2B;font-size:16px">✘</span>') + '</td>';
+    h += '<td style="padding:8px 12px;border:1px solid #ddd;text-align:center"><button onclick="openModal(\'' + r.bandeira + '\')" style="background:#0099cc;color:#fff;border:none;padding:4px 10px;border-radius:3px;cursor:pointer;font-size:11px">📋 Ver</button></td>';
+    h += '</tr>';
+  });
+
+  // Total
+  h += '<tr style="background:#0099cc;color:#fff;font-weight:600">';
+  h += '<td colspan="2" style="padding:8px 12px;border:1px solid #0088bb;text-align:center">Total</td>';
+  h += '<td style="padding:8px 12px;border:1px solid #0088bb;text-align:center">' + fmtn(totalClienteQtd) + '</td>';
+  h += '<td style="padding:8px 12px;border:1px solid #0088bb;text-align:right">' + fmt(totalClienteValor) + '</td>';
+  h += '<td style="padding:8px 12px;border:1px solid #0088bb;text-align:center">' + fmtn(totalAdqQtd) + '</td>';
+  h += '<td style="padding:8px 12px;border:1px solid #0088bb;text-align:right">' + fmt(totalAdqValor) + '</td>';
+  h += '<td colspan="2" style="padding:8px 12px;border:1px solid #0088bb"></td>';
+  h += '</tr>';
+
+  h += '</tbody></table></td></tr></tbody></table>';
+  // Graficos
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:16px">';
+
+  // Grafico 1: Pizza Conciliado vs Nao Conciliado
+  h += '<div style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:16px;text-align:center">';
+  h += '<div style="font-size:13px;font-weight:600;color:#1A2B3C;margin-bottom:8px">Conciliacao Geral</div>';
+  h += '<canvas id="chartPizza" width="280" height="280"></canvas>';
+  h += '</div>';
+
+  // Grafico 2: Barras por Bandeira - Cliente vs Adquirente (Quantidade)
+  h += '<div style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:16px;text-align:center">';
+  h += '<div style="font-size:13px;font-weight:600;color:#1A2B3C;margin-bottom:8px">Quantidade por Bandeira</div>';
+  h += '<canvas id="chartBarrasQtd" width="280" height="280"></canvas>';
+  h += '</div>';
+
+  // Grafico 3: Barras por Bandeira - Cliente vs Adquirente (Valor)
+  h += '<div style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:16px;text-align:center">';
+  h += '<div style="font-size:13px;font-weight:600;color:#1A2B3C;margin-bottom:8px">Valor por Bandeira (R$)</div>';
+  h += '<canvas id="chartBarrasVal" width="280" height="280"></canvas>';
+  h += '</div>';
+
+  h += '</div>';
+
+  return h;
+
+  // Renderizar graficos com Chart.js
+  setTimeout(() => renderAdqErpCharts(resumoFiltrado, totalClienteQtd, totalAdqQtd), 100);
+}
+
+let chartPizzaInst = null, chartQtdInst = null, chartValInst = null;
+function renderAdqErpCharts(resumo, totalClienteQtd, totalAdqQtd) {
+  // Destruir graficos anteriores
+  if (chartPizzaInst) { chartPizzaInst.destroy(); chartPizzaInst = null; }
+  if (chartQtdInst) { chartQtdInst.destroy(); chartQtdInst = null; }
+  if (chartValInst) { chartValInst.destroy(); chartValInst = null; }
+  const concTotal = resumo.reduce((s, r) => s + Math.min(r.clienteQtd, r.adqQtd), 0);
+  const naoConcCliente = totalClienteQtd - concTotal;
+  const naoConcAdq = totalAdqQtd - concTotal;
+
+  // Pizza
+  const ctxPizza = document.getElementById('chartPizza');
+  if (ctxPizza) {
+    chartPizzaInst = new Chart(ctxPizza, {
+      type: 'doughnut',
+      data: {
+        labels: ['Conciliado', 'Somente ERP', 'Somente Adquirente'],
+        datasets: [{
+          data: [concTotal, naoConcCliente > 0 ? naoConcCliente : 0, naoConcAdq > 0 ? naoConcAdq : 0],
+          backgroundColor: ['#27ae60', '#e67e22', '#E41E2B'],
+          borderWidth: 2,
+          borderColor: '#fff'
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 12 } },
+          tooltip: { callbacks: { label: function(ctx) { return ctx.label + ': ' + ctx.raw.toLocaleString('pt-BR'); } } }
+        }
+      }
+    });
+  }
+
+  // Barras Quantidade
+  const labels = resumo.map(r => r.bandeira);
+  const ctxQtd = document.getElementById('chartBarrasQtd');
+  if (ctxQtd) {
+    chartQtdInst = new Chart(ctxQtd, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Cliente (ERP)', data: resumo.map(r => r.clienteQtd), backgroundColor: '#0066B3' },
+          { label: 'Adquirente', data: resumo.map(r => r.adqQtd), backgroundColor: '#E41E2B' }
+        ]
+      },
+      options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true, ticks: { font: { size: 10 } } }, x: { ticks: { font: { size: 10 } } } },
+        plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, padding: 8 } } }
+      }
+    });
+  }
+
+  // Barras Valor
+  const ctxVal = document.getElementById('chartBarrasVal');
+  if (ctxVal) {
+    chartValInst = new Chart(ctxVal, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Cliente (ERP)', data: resumo.map(r => r.clienteValor), backgroundColor: '#0066B3' },
+          { label: 'Adquirente', data: resumo.map(r => r.adqValor), backgroundColor: '#E41E2B' }
+        ]
+      },
+      options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true, ticks: { font: { size: 10 }, callback: function(v) { return 'R$ ' + (v/1000).toFixed(0) + 'k'; } } }, x: { ticks: { font: { size: 10 } } } },
+        plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, padding: 8 } } }
+      }
+    });
+  }
+}
+
+// Modal detalhe por bandeira
+function openModal(bandeira) {
+  // Pegar o dia expandido atual
+  var diaData = null;
+  if (window._todasConc) {
+    for (var i = 0; i < window._todasConc.length; i++) {
+      var row = document.getElementById('detalheDia' + i);
+      if (row && row.style.display !== 'none') { diaData = window._todasConc[i]; break; }
+    }
+  }
+  if (!diaData) diaData = getVisaoByDate();
+  window._modalDiaData = diaData;
+
+  modalBand = bandeira;
+  modalPage = 0;
+  modalItems = [];
+  modalSortDir = {};
+  document.getElementById('modalOverlay').style.display = 'block';
+  document.getElementById('modalDetalhe').style.display = 'block';
+
+  var adqName = diaData ? (diaData.adquirente || 'Rede') : 'Rede';
+  var dataLabel = diaData ? diaData.data : '';
+
+  document.getElementById('modalInfo').innerHTML = '<div><strong>Data da venda:</strong> ' + dataLabel + '</div><div><strong>Adquirente:</strong> ' + adqName + '</div><div><strong>Bandeira:</strong> ' + bandeira + '</div>';
+  renderModalPage();
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').style.display = 'none';
+  document.getElementById('modalDetalhe').style.display = 'none';
+  window._verLinhaPage = 0;
+}
+
+function renderModalPage() {
+  var diaData = window._modalDiaData || getVisaoByDate();
+  var detSource = diaData && diaData.detalhe ? diaData.detalhe : (VISAO && VISAO.detalhe ? VISAO.detalhe : {});
+  const detalhe = detSource[modalBand] || { conciliados: [], naoConciliados: [] };
+  const filtroConciliada = document.querySelector('input[name="filtroConciliada"]:checked')?.value || '';
+
+  let items = [];
+  if (filtroConciliada === 'sim') {
+    // Somente conciliados
+    items = detalhe.conciliados.map((r, i) => ({ ...r, num: i + 1 }));
+  } else if (filtroConciliada === 'nao') {
+    // Somente nao conciliados - priorizando adquirente
+    const adqFirst = detalhe.naoConciliados.filter(r => r.tipo === 'adq');
+    const erpAfter = detalhe.naoConciliados.filter(r => r.tipo === 'erp');
+    items = [...adqFirst, ...erpAfter].map((r, i) => ({ ...r, num: i + 1 }));
+  } else {
+    // Todos - NAO CONCILIADOS primeiro, depois conciliados
+    const adqFirst = detalhe.naoConciliados.filter(r => r.tipo === 'adq');
+    const erpAfter = detalhe.naoConciliados.filter(r => r.tipo === 'erp');
+    items = [...adqFirst, ...erpAfter, ...detalhe.conciliados].map((r, i) => ({ ...r, num: i + 1 }));
+  }
+
+  // Guardar para ordenacao
+  if (modalItems.length === 0 || !modalSortDir || Object.keys(modalSortDir).length === 0) {
+    modalItems = items;
+  }
+  items = modalItems;
+
+  const total = items.length;
+  const pages = Math.ceil(total / MODAL_PAGE_SIZE);
+  const start = modalPage * MODAL_PAGE_SIZE;
+  const page = items.slice(start, start + MODAL_PAGE_SIZE);
+
+  let h = '<table style="width:100%;border-collapse:collapse;font-size:11px">';
+  h += '<thead><tr>';
+  h += '<th rowspan="2" style="background:#0099cc;color:#fff;padding:6px;border:1px solid #0088bb;width:30px"></th>';
+  h += '<th rowspan="2" style="background:#0099cc;color:#fff;padding:6px;border:1px solid #0088bb">#</th>';
+  h += '<th colspan="6" style="background:#0099cc;color:#fff;padding:6px;border:1px solid #0088bb;text-align:center">Cliente (ERP)</th>';
+  h += '<th colspan="6" style="background:#0099cc;color:#fff;padding:6px;border:1px solid #0088bb;text-align:center">Adquirente</th>';
+  h += '<th rowspan="2" style="background:#0099cc;color:#fff;padding:6px;border:1px solid #0088bb;text-align:center">Sit.</th>';
+  h += '</tr><tr>';
+  ['Dados','Data venda','Nsu','Aut.','Plano','Valor'].forEach((c,ci) => h += '<th style="background:#0099cc;color:#fff;padding:5px 6px;border:1px solid #0088bb;font-size:10px;cursor:pointer" onclick="sortModal(\'cli\','+ci+')">'+c+' ↕</th>');
+  ['Data venda','Nsu','Aut.','Plano','Valor','Meio'].forEach((c,ci) => h += '<th style="background:#0099cc;color:#fff;padding:5px 6px;border:1px solid #0088bb;font-size:10px;cursor:pointer" onclick="sortModal(\'adq\','+ci+')">'+c+' ↕</th>');
+  h += '</tr></thead><tbody>';
+
+  page.forEach((r, i) => {
+    const bg = i % 2 === 0 ? '#fff' : '#f5f8fb';
+    const sitIcon = r.sit ? '<span style="color:#27ae60;font-weight:700">✔</span>' : '<span style="color:#E41E2B;font-weight:700">✘</span>';
+    h += '<tr style="background:'+bg+'">';
+    h += '<td style="padding:4px 6px;border:1px solid #e0e5ea;text-align:center"><input type="checkbox"></td>';
+    h += '<td style="padding:4px 6px;border:1px solid #e0e5ea;text-align:center">'+(start+i+1)+'</td>';
+    // Cliente
+    h += '<td style="padding:4px 6px;border:1px solid #e0e5ea;font-size:10px;color:#0066B3">'+(r.cTitulo||'')+'</td>';
+    h += '<td style="padding:4px 6px;border:1px solid #e0e5ea">'+(r.cData||'')+'</td>';
+    h += '<td style="padding:4px 6px;border:1px solid #e0e5ea;font-family:monospace;font-size:10px">'+(r.cNsu||'')+'</td>';
+    h += '<td style="padding:4px 6px;border:1px solid #e0e5ea;font-family:monospace;font-size:10px">'+(r.cAuth||'')+'</td>';
+    h += '<td style="padding:4px 6px;border:1px solid #e0e5ea;text-align:center">'+(r.cPlano||'')+'</td>';
+    h += '<td style="padding:4px 6px;border:1px solid #e0e5ea;text-align:right">'+(r.cValor?fmt(r.cValor):'')+'</td>';
+    // Adquirente
+    h += '<td style="padding:4px 6px;border:1px solid #e0e5ea">'+(r.aData||'')+'</td>';
+    h += '<td style="padding:4px 6px;border:1px solid #e0e5ea;font-family:monospace;font-size:10px">'+(r.aNsu||'')+'</td>';
+    h += '<td style="padding:4px 6px;border:1px solid #e0e5ea;font-family:monospace;font-size:10px">'+(r.aAuth||'')+'</td>';
+    h += '<td style="padding:4px 6px;border:1px solid #e0e5ea;text-align:center">'+(r.aPlano||'')+'</td>';
+    h += '<td style="padding:4px 6px;border:1px solid #e0e5ea;text-align:right">'+(r.aValor?fmt(r.aValor):'')+'</td>';
+    h += '<td style="padding:4px 6px;border:1px solid #e0e5ea;text-align:center">'+(r.aMeio||'')+'</td>';
+    // Sit
+    h += '<td style="padding:4px 6px;border:1px solid #e0e5ea;text-align:center">'+sitIcon+'</td>';
+    h += '</tr>';
+  });
+  h += '</tbody></table>';
+  document.getElementById('modalBody').innerHTML = h;
+
+  // Pagination
+  let ph = '<span>'+(start+1)+'-'+Math.min(start+MODAL_PAGE_SIZE,total)+' de '+total+'</span><div>';
+  ph += '<button onclick="modalPage--;renderModalPage()" style="background:#0099cc;color:#fff;border:none;padding:4px 12px;border-radius:3px;cursor:pointer;margin-right:4px" '+(modalPage===0?'disabled':'')+'>‹</button>';
+  ph += '<button onclick="modalPage++;renderModalPage()" style="background:#0099cc;color:#fff;border:none;padding:4px 12px;border-radius:3px;cursor:pointer" '+(modalPage>=pages-1?'disabled':'')+'>›</button>';
+  ph += '</div>';
+  document.getElementById('modalPagination').innerHTML = ph;
+}
+
+function vendasPrev() { if (vendasPage > 0) { vendasPage--; renderVendasPage(); } }
+function vendasNext() { const all = [...DATA.conc3vias,...DATA.cieloFn01,...DATA.cieloSt02,...DATA.somenteCielo]; if ((vendasPage+1)*PAGE_SIZE < all.length) { vendasPage++; renderVendasPage(); } }
+let currentFilter = null;
+let currentPage = 0;
+const PAGE_SIZE = 50;
+
+// Carregar tripla somente quando clicar no menu (nao ao abrir)
+function carregarTripla() {
+  if (DATA) return;
+  fetch('conciliacao-data.json')
+    .then(function(r) { return r.json(); })
+    .then(function(d) { DATA = d; renderDashboard(); showDetail('conc3vias','CONCILIADO (3 vias)','#27ae60'); })
+    .catch(function(e) { console.log('Tripla nao carregou:', e.message); });
+}
+document.getElementById('acesso').textContent = 'Ultimo Acesso: ' + new Date().toLocaleString('pt-BR');
+
+// D-1 em todos os campos de data
+var ontem = new Date();
+ontem.setDate(ontem.getDate() - 1);
+var ontemISO = ontem.toISOString().substring(0, 10);
+document.querySelectorAll('input[type=date]').forEach(function(el) { el.value = ontemISO; });
+
+// Filtros banco: re-renderizar quando mudam
+['filtroBancoBandeira','filtroBancoNatureza'].forEach(function(id) {
+  var el = document.getElementById(id);
+  if (el) el.addEventListener('change', function() { if (BANCO) renderBancoPage(); });
+});
+
+// Abrir tela ADQ x ERP como padrao
+document.getElementById('pageTripla').style.display = 'none';
+document.getElementById('pageAdqErp').style.display = 'block';
+document.getElementById('pageTaxas').style.display = 'none';
+document.getElementById('pageBanco').style.display = 'none';
+document.getElementById('pageVendas').style.display = 'none';
+
+function renderDashboard() {
+  const d = DATA;
+  const totalCielo = d.conc3vias.length + d.cieloFn01.length + d.cieloSt02.length + d.somenteCielo.length;
+  const valCielo = [...d.conc3vias,...d.cieloFn01,...d.cieloSt02,...d.somenteCielo].reduce((s,r)=>s+r.cBruto,0);
+
+  document.getElementById('srcCielo').textContent = fmtn(totalCielo);
+  document.getElementById('srcCieloVal').textContent = 'transacoes | ' + fmt(valCielo);
+  document.getElementById('srcFn01').textContent = fmtn(d.conc3vias.length + d.cieloFn01.length + d.somenteFn01.length);
+  document.getElementById('srcSt02').textContent = fmtn(d.conc3vias.length + d.cieloSt02.length + d.somenteSt02.length);
+  document.getElementById('taxa').textContent = ((d.conc3vias.length/totalCielo)*100).toFixed(1) + '%';
+  document.getElementById('taxaDetail').textContent = fmtn(d.conc3vias.length) + ' de ' + fmtn(totalCielo) + ' | Parcial: ' + (((d.conc3vias.length+d.cieloFn01.length+d.cieloSt02.length)/totalCielo)*100).toFixed(1) + '%';
+  document.getElementById('acesso').textContent = 'Ultimo Acesso: ' + new Date().toLocaleString('pt-BR');
+
+  const statuses = [
+    {key:'conc3vias',icon:'✅',title:'CONCILIADO (3 vias)',sub:'Adquirente + ERP + Sitef',count:d.conc3vias.length,val:d.conc3vias.reduce((s,r)=>s+r.cBruto,0),color:'#27ae60',border:'#27ae60'},
+    {key:'cieloFn01',icon:'🔵',title:'Adquirente + ERP apenas',sub:'Sem correspondencia no Sitef',count:d.cieloFn01.length,val:d.cieloFn01.reduce((s,r)=>s+r.cBruto,0),color:'#0066B3',border:'#0066B3'},
+    {key:'cieloSt02',icon:'🟠',title:'Adquirente + Sitef apenas',sub:'Sem correspondencia no ERP',count:d.cieloSt02.length,val:d.cieloSt02.reduce((s,r)=>s+r.cBruto,0),color:'#e67e22',border:'#e67e22'},
+    {key:'somenteCielo',icon:'❌',title:'SOMENTE NO ADQUIRENTE',sub:'Nao encontrado no ERP nem no Sitef',count:d.somenteCielo.length,val:d.somenteCielo.reduce((s,r)=>s+r.cBruto,0),color:'#E41E2B',border:'#E41E2B'},
+    {key:'somenteFn01',icon:'🟣',title:'SOMENTE NO ERP',sub:'Faltante no Adquirente',count:d.somenteFn01.length,val:d.somenteFn01.reduce((s,r)=>s+r.valor,0),color:'#8e44ad',border:'#8e44ad'},
+    {key:'somenteSt02',icon:'⚫',title:'SOMENTE NO SITEF',sub:'Faltante no Adquirente',count:d.somenteSt02.length,val:d.somenteSt02.reduce((s,r)=>s+r.valor,0),color:'#34495e',border:'#34495e'},
+  ];
+
+  let gh = '';
+  statuses.forEach(s => {
+    gh += '<div class="status-card" style="border-left:5px solid '+s.border+'" onclick="showDetail(\''+s.key+'\',\''+s.title+'\',\''+s.color+'\')" id="card-'+s.key+'">';
+    gh += '<div class="info"><div class="title">'+s.icon+' '+s.title+'</div><div class="subtitle">'+s.sub+'</div></div>';
+    gh += '<div class="numbers"><div class="count" style="color:'+s.color+'">'+fmtn(s.count)+'</div><div class="val" style="color:'+s.color+'">'+fmt(s.val)+'</div></div>';
+    gh += '</div>';
+  });
+  document.getElementById('statusGrid').innerHTML = gh;
+}
+
+function showDetail(key, title, color) {
+  currentFilter = key;
+  currentPage = 0;
+  // Highlight active card
+  document.querySelectorAll('.status-card').forEach(c => c.classList.remove('active'));
+  document.getElementById('card-'+key)?.classList.add('active');
+  renderDetail();
+}
+
+function renderDetail() {
+  const key = currentFilter;
+  const items = DATA[key];
+  const total = items.length;
+  const pages = Math.ceil(total / PAGE_SIZE);
+  const start = currentPage * PAGE_SIZE;
+  const page = items.slice(start, start + PAGE_SIZE);
+  const isCielo = ['conc3vias','cieloFn01','cieloSt02','somenteCielo'].includes(key);
+
+  let h = '';
+  const titles = {conc3vias:'Conciliado (3 vias)',cieloFn01:'Adquirente + ERP',cieloSt02:'Adquirente + Sitef',somenteCielo:'Somente no Adquirente',somenteFn01:'Somente no ERP',somenteSt02:'Somente no Sitef'};
+  h += '<div class="detail-header"><span>'+titles[key]+' — '+fmtn(total)+' transacoes</span><button class="close" onclick="closeDetail()">✕ Fechar</button></div>';
+  h += '<div class="detail-info">Exibindo '+(start+1)+' a '+Math.min(start+PAGE_SIZE,total)+' de '+fmtn(total)+' registros</div>';
+  h += '<div class="detail-table-wrap"><table><thead><tr>';
+
+  if (key === 'somenteFn01') {
+    ['Data','Valor Bruto','Valor Liquido','Taxa','Loja'].forEach(c => h += '<th>'+c+'</th>');
+    h += '</tr></thead><tbody>';
+    page.forEach(r => {
+      h += '<tr><td>'+(r.data||'').split('-').reverse().join('/')+'</td>';
+      h += '<td class="right">'+fmt(r.valor)+'</td><td class="right">'+fmt(r.liq)+'</td><td class="right red">'+fmt(r.taxa)+'</td>';
+      h += '<td>'+r.loja+'</td></tr>';
+    });
+  } else if (key === 'somenteSt02') {
+    ['Data','Hora','Valor','NSU','Autorizacao','Bandeira','Modalidade','Cartao'].forEach(c => h += '<th>'+c+'</th>');
+    h += '</tr></thead><tbody>';
+    page.forEach(r => {
+      h += '<tr><td>'+(r.data||'').split('-').reverse().join('/')+'</td><td>'+r.hora+'</td>';
+      h += '<td class="right">'+fmt(r.valor)+'</td><td class="mono">'+r.nsu+'</td><td class="mono">'+r.auth+'</td>';
+      h += '<td>'+r.bandeira+'</td><td>'+r.modalidade+'</td><td class="mono">'+r.cartao+'</td></tr>';
+    });
+  } else {
+    const cols = ['Data','EC','Nat.','NSU','Auth','Adq. Bruto','Adq. Liquido','Adq. Taxa'];
+    if (key === 'conc3vias' || key === 'cieloFn01') cols.push('ERP Valor','ERP Liquido','Loja');
+    if (key === 'conc3vias' || key === 'cieloSt02') cols.push('Sitef Hora','Sitef Bandeira','Sitef Cartao');
+    cols.forEach(c => h += '<th>'+c+'</th>');
+    h += '</tr></thead><tbody>';
+    page.forEach(r => {
+      h += '<tr><td>'+(r.data||'').split('-').reverse().join('/')+'</td>';
+      h += '<td>'+r.ec+'</td>';
+      h += '<td><span class="badge-nat '+(r.nat==='Debito'?'badge-deb':'badge-cred')+'">'+r.nat+'</span></td>';
+      h += '<td class="mono">'+r.nsu+'</td><td class="mono">'+r.auth+'</td>';
+      h += '<td class="right">'+fmt(r.cBruto)+'</td><td class="right">'+fmt(r.cLiq)+'</td><td class="right red">'+fmt(r.cTaxa)+'</td>';
+      if (key === 'conc3vias' || key === 'cieloFn01') {
+        h += '<td class="right">'+(r.fn01Valor!=null?fmt(r.fn01Valor):'-')+'</td>';
+        h += '<td class="right">'+(r.fn01Liq!=null?fmt(r.fn01Liq):'-')+'</td>';
+        h += '<td>'+(r.fn01Loja||'-')+'</td>';
+      }
+      if (key === 'conc3vias' || key === 'cieloSt02') {
+        h += '<td>'+(r.st02Hora||'-')+'</td>';
+        h += '<td>'+(r.st02Band||'-')+'</td>';
+        h += '<td class="mono">'+(r.st02Cartao||'-')+'</td>';
+      }
+      h += '</tr>';
+    });
+  }
+  h += '</tbody></table></div>';
+
+  // Pagination
+  if (pages > 1) {
+    h += '<div class="pagination">';
+    h += '<button onclick="prevPage()" '+(currentPage===0?'disabled':'')+'>◀ Anterior</button>';
+    h += '<span>Pagina '+(currentPage+1)+' de '+pages+'</span>';
+    h += '<button onclick="nextPage()" '+(currentPage>=pages-1?'disabled':'')+'>Proximo ▶</button>';
+    h += '</div>';
+  }
+
+  document.getElementById('detail').innerHTML = h;
+  document.getElementById('detail').classList.remove('hidden');
+  document.getElementById('detail').scrollIntoView({behavior:'smooth'});
+}
+
+function closeDetail() {
+  document.getElementById('detail').classList.add('hidden');
+  document.querySelectorAll('.status-card').forEach(c => c.classList.remove('active'));
+  currentFilter = null;
+}
+
+function prevPage() { if (currentPage > 0) { currentPage--; renderDetail(); } }
+function nextPage() { const total = DATA[currentFilter].length; if ((currentPage+1)*PAGE_SIZE < total) { currentPage++; renderDetail(); } }
+</script>
+</body>
+</html>

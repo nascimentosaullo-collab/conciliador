@@ -1,0 +1,4 @@
+ENVIO_REDE_*.json
+ENVIOS_*.zip
+node_modules/
+*.log

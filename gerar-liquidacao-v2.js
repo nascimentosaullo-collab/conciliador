@@ -60,7 +60,7 @@ function getBandeira(cartao) {
   return 'N/I';
 }
 
-// Parsear EEVD - transacoes individuais com bruto E liquido + bandeira
+// Parsear EEVD - transacoes individuais com bruto, liquido, bandeira, NSU
 function parseEEVDTxs(filePath) {
   if (!fs.existsSync(filePath)) return [];
   const content = fs.readFileSync(filePath, 'utf-8');
@@ -72,10 +72,12 @@ function parseEEVDTxs(filePath) {
     const dataVenda = dv.substring(4) + '-' + dv.substring(2, 4) + '-' + dv.substring(0, 2);
     const cartao = (f[7] || '').replace(/\s/g, '').replace(/\*/g, '');
     const bandeira = getBandeira(cartao);
+    const nsuAdq = (f[9] || '').trim();
+    const autorizacao = (f[19] || '').trim();
     return {
       valorBruto: Math.round(valorBruto * 100) / 100,
       valorLiquido: Math.round(valorLiquido * 100) / 100,
-      dataVenda, bandeira,
+      dataVenda, bandeira, nsuAdq, autorizacao,
     };
   });
 }
@@ -182,18 +184,18 @@ function matchDebitoFn01(eevdTxs, fn01All) {
   }
 
   // PASSO 1: match com data exata
-  const pares = [];
+  const pares = []; // {fn01, eevd}
   const naoConc = [];
   for (const tx of eevdTxs) {
     const fn = (exactByVal.get(tx.valorBruto.toFixed(2)) || []).find(f => !f.matched);
-    if (fn) { fn.matched = true; pares.push(fn); }
+    if (fn) { fn.matched = true; pares.push({ fn01: fn, eevd: tx }); }
     else { naoConc.push(tx); }
   }
 
   // PASSO 2: fallback +-1 dia para nao conciliados
   for (const tx of naoConc) {
     const fn = (expandByVal.get(tx.valorBruto.toFixed(2)) || []).find(f => !f.matched);
-    if (fn) { fn.matched = true; pares.push(fn); }
+    if (fn) { fn.matched = true; pares.push({ fn01: fn, eevd: tx }); }
   }
 
   return pares;
@@ -238,21 +240,47 @@ function matchCreditoFn01(eefiData, fn01All, dataLiqISO) {
   return grupos;
 }
 
-// Montar venda ENVIO
-function montarVenda(fn01, isCredito) {
+// Montar venda ENVIO - debito (com dados EEVD)
+function montarVendaDebito(fn01, eevd) {
   let valorDev = fn01.valorDevedor;
   if (valorDev === 0) valorDev = Math.round((fn01.valor - fn01.taxa) * 100) / 100;
   return {
     loja: fn01.loja, data: fn01.dtEmissao, pdv: fn01.pdv,
-    autorizacao: String(fn01.nsuHost), valorTransacao: Math.round(fn01.valor * 100) / 100,
-    cnpj: fn01.cnpj, rede: 1, produto: isCredito ? 1141 : 1206,
-    valorDevedor: valorDev, nsuHost: fn01.nsuHost, nsuSitef: fn01.nsuHost,
+    autorizacao: eevd ? eevd.autorizacao : String(fn01.nsuHost),
+    valorTransacao: eevd ? eevd.valorLiquido : Math.round(fn01.valor * 100) / 100,
+    cnpj: fn01.cnpj, rede: 1, produto: 1206,
+    valorDevedor: valorDev,
+    nsuHost: eevd ? parseInt(eevd.nsuAdq) || fn01.nsuHost : fn01.nsuHost,
+    nsuSitef: fn01.nsuHost,
     qtdParcela: fn01.qtdeParcela, parcela: fn01.parcela, dataVencimento: fn01.dtVenc,
     tipo: 3, numeroTitulo: fn01.titulo, sequencial: fn01.sequ,
     numeroCupom: 1, qtdCupom: 1, estabelecimento: 201661102737975,
-    capturaAdquirente: 1, meioCaptura: 1, valorPago: valorDev,
+    capturaAdquirente: 1, meioCaptura: 1,
+    valorPago: eevd ? eevd.valorLiquido : valorDev,
     idCliente: 11, idEmpresa: 301, chaveVenda: 0,
-    idProdutoStatix: isCredito ? 6 : 20,
+    idProdutoStatix: 20,
+    valorVendaAdquirente: 0.0, valorVendaCliente: 0.0,
+  };
+}
+
+// Montar venda ENVIO - credito (FN01 only, EEFI nao tem match individual)
+function montarVendaCredito(fn01) {
+  let valorDev = fn01.valorDevedor;
+  if (valorDev === 0) valorDev = Math.round((fn01.valor - fn01.taxa) * 100) / 100;
+  return {
+    loja: fn01.loja, data: fn01.dtEmissao, pdv: fn01.pdv,
+    autorizacao: String(fn01.nsuHost),
+    valorTransacao: valorDev, // usar valorDevedor como Statix faz (valor liquido)
+    cnpj: fn01.cnpj, rede: 1, produto: 1141,
+    valorDevedor: valorDev,
+    nsuHost: fn01.nsuHost, nsuSitef: fn01.nsuHost,
+    qtdParcela: fn01.qtdeParcela, parcela: fn01.parcela, dataVencimento: fn01.dtVenc,
+    tipo: 3, numeroTitulo: fn01.titulo, sequencial: fn01.sequ,
+    numeroCupom: 1, qtdCupom: 1, estabelecimento: 201661102737975,
+    capturaAdquirente: 1, meioCaptura: 1,
+    valorPago: valorDev,
+    idCliente: 11, idEmpresa: 301, chaveVenda: 0,
+    idProdutoStatix: 6,
     valorVendaAdquirente: 0.0, valorVendaCliente: 0.0,
   };
 }
@@ -334,12 +362,12 @@ for (const dia of dias) {
   const debitoFn01 = matchDebitoFn01(eevdTxs, allFn01);
   const creditoFn01Grupos = matchCreditoFn01(eefiData, allFn01, dataLiqISO);
 
-  // Agrupar debito FN01 por bandeira
-  const debitoFn01ByBand = new Map();
-  for (const fn of debitoFn01) {
-    const band = getBandeira(fn.cartao).toUpperCase();
-    if (!debitoFn01ByBand.has(band)) debitoFn01ByBand.set(band, []);
-    debitoFn01ByBand.get(band).push(fn);
+  // Agrupar debito pares {fn01, eevd} por bandeira
+  const debitoParesByBand = new Map();
+  for (const par of debitoFn01) {
+    const band = getBandeira(par.fn01.cartao).toUpperCase();
+    if (!debitoParesByBand.has(band)) debitoParesByBand.set(band, []);
+    debitoParesByBand.get(band).push(par);
   }
 
   // === Extrato Bancario ===
@@ -365,13 +393,13 @@ for (const dia of dias) {
     if (ext.natureza === 'DEBITO') {
       // Adq liquido = EEVD liquido por bandeira
       adqLiquido = Math.round((eevdLiqByBand.get(bandKey) || 0) * 100) / 100;
-      // FN01 para ENVIO
-      vendas = (debitoFn01ByBand.get(bandKey) || []).map(fn => montarVenda(fn, false));
+      // FN01 para ENVIO - com dados EEVD
+      vendas = (debitoParesByBand.get(bandKey) || []).map(par => montarVendaDebito(par.fn01, par.eevd));
     } else {
       // Credito: EEFI nao tem split por bandeira, adq liquido = banco (dif=0 por linha)
       adqLiquido = ext.valor;
       // FN01 para ENVIO
-      vendas = (creditoFn01Grupos.get(bandKey) || []).map(fn => montarVenda(fn, true));
+      vendas = (creditoFn01Grupos.get(bandKey) || []).map(fn => montarVendaCredito(fn));
     }
 
     const difBanco = Math.round((adqLiquido - ext.valor) * 100) / 100;
